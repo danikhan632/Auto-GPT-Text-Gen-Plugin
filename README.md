@@ -30,7 +30,11 @@ Windows, Powershell
 cd plugins; git clone https://github.com/danikhan632/Auto-GPT-Text-Gen-Plugin.git; Compress-Archive -Path .\Auto-GPT-Text-Gen-Plugin -DestinationPath .\Auto-GPT-Text-Gen-Plugin.zip; Remove-Item -Recurse -Force .\Auto-GPT-Text-Gen-Plugin; cd ..
 ```
 
+config
+```
+CMD_FLAGS = '--chat --model-menu --model anon8231489123_vicuna-13b-GPTQ-4bit-128g  --no-stream --api --gpu-memory 12 --verbose --settings settings.json --auto-devices'
 
+```
 
 5. **Allowlist the plugin (optional):**
    Add the plugin's class name to the `ALLOWLISTED_PLUGINS` in the `.env` file to avoid being prompted with a warning when loading the plugin:
