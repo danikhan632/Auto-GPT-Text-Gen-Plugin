@@ -5,5 +5,6 @@ pylint
 abstract-singleton
 wheel
 setuptools
+auto_gpt_plugin_template
 build
 twine
