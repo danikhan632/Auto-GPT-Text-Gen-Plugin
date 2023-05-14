@@ -14,11 +14,11 @@ class Client:
         #     "api_key": self.api_key 
         # }
 
-    def create_chat_completion(self,messages, temperature, max_tokens):
+    def create_chat_completion(self, messages, temperature, max_tokens):
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Creating chat completion with messages {messages}\n"
             f" and temperature {temperature}\n"
-             " and max_tokens {max_tokens}"
+            f" and max_tokens {max_tokens}"
         )
         if max_tokens is None:
             max_tokens=400
