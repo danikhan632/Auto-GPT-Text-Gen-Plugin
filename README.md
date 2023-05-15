@@ -73,3 +73,4 @@ A few notes:
 * To change the commands sent to your model, edit the DISABLED_COMMAND_CATEGORIES variable in .env. 
 * To change the AI profile, edit the ai_settings.yaml file.
 * The purpose of the JSON file is to customize the length of the prompt sent to your model as most models are limited to 2048 tokens which is slightly more than half of the tokens available to GPT-3.5 Turbo, and 1/4 the tokens which are usable by GPT-4.
+* **When you edit this prompt, both the original prompt in Auto-GPT and the prompt you edit will show in debug output. Only the prompt from this plugin is actually sent to your model.**
