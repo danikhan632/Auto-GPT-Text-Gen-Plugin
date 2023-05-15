@@ -1,4 +1,6 @@
 {
+    "lead_in": "You are ",
+    "goal_label": "GOALS:\n\n",
     "constraints_label": "Constraints:\n",
     "constraints": [
         "~4000 word limit for short term memory. Your short term memory is short, so immediately save important information to files.",
