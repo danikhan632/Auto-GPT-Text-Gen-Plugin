@@ -2,12 +2,21 @@ import requests
 import os
 import json
 from colorama import Fore, Style
+from autogpt.config import Config
 from autogpt.logs import logger
+from autogpt.prompts.generator import PromptGenerator
+from autogpt.commands.command import CommandRegistry
 
     
 class Client:
     def __init__(self):
         self.base_url = os.environ.get('LOCAL_LLM_BASE_URL', "http://127.0.0.1:5000/")
+        self.prompt_generator = PromptGenerator()
+        self.command_registry = CommandRegistry()
+        self.config = Config()
+
+        self.build_command_registry()
+
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}"
         )
@@ -51,9 +60,99 @@ class Client:
             message_string += f"{name}: {user_msg}\n\n"
 
         return message_string
+    
+
+    def build_command_registry(self) -> CommandRegistry:
+        """
+        Build the command registry needed for prompt building
+
+        Returns:
+            CommandRegistry: The command registry to work against
+        """
+
+        # TODO: Fix me. This is a terrible idea. When this functionality
+        # is modularized, replace this code.
+
+        command_categories = [
+            "autogpt.commands.analyze_code",
+            "autogpt.commands.audio_text",
+            "autogpt.commands.execute_code",
+            "autogpt.commands.file_operations",
+            "autogpt.commands.git_operations",
+            "autogpt.commands.google_search",
+            "autogpt.commands.image_gen",
+            "autogpt.commands.improve_code",
+            "autogpt.commands.twitter",
+            "autogpt.commands.web_selenium",
+            "autogpt.commands.write_tests",
+            "autogpt.app",
+            "autogpt.commands.task_statuses",
+        ]
+
+        command_categories = [
+            x for x in command_categories if x not in self.config.disabled_command_categories
+        ]
+
+        for command_category in command_categories:
+            self.command_registry.import_commands(command_category)
+    
+
+    def build_prompt_payload(self) -> str:
+        """ 
+        Build the prompt for the API.
+        """
+
+        constraints = [
+            'Always save important info to files.'
+            'Only use commands in double quotes (e.g. "command name").'
+        ]
+        resources = [
+            'Internet search'
+            'Long term memory'
+            'Simple agents for Q&A'
+            'File output'
+        ]
+        evaluations = [
+            'Always review/analyze your actions are at peak efficiency.'
+            'Constantly self-critique your big-picture planning.'
+            'Reflect on past decisions to refine your apporoach.'
+            'Complete tasks in the fewest steps possible.'
+            'Save code to a file'
+        ]
+
+        for constraint in constraints:
+            self.prompt_generator.add_constraint(constraint)
+
+        for resource in resources:
+            self.prompt_generator.add_resource(resource)
+
+        for evaluation in evaluations:
+            self.prompt_generator.add_performance_evaluation(evaluation)
+
+        for idx, cmd in enumerate(self.command_registry.commands):
+            self.prompt_generator.add_command(cmd, idx)
+
+        self.prompt_generator.response_format = {
+            "thoughts": {
+                "text": "<your thought>",
+                "reasoning": "<your reasoning>",
+                "plan": "<your plan as a list>",
+                "criticism": "<your self-criticism>",
+                "speak": "<your message to the user",
+            },
+            "command": {
+                "name": "<selected command>",
+                "args": {
+                    "arg name": "<arg value>"
+                }   
+            }
+        }
+
+        return self.prompt_generator.generate_prompt_string()
 
 
     def create_chat_completion(self, messages, temperature, max_tokens):
+        messages[0]['content'] = self.build_prompt_payload()
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Creating chat completion with messages {messages}\n"
             f" and temperature {temperature}\n"
