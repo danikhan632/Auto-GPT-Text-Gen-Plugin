@@ -3,6 +3,7 @@ import os
 import json
 from colorama import Fore, Style
 from autogpt.config import Config
+from autogpt.config.ai_config import AIConfig
 from autogpt.logs import logger
 from autogpt.prompts.generator import PromptGenerator
 from autogpt.commands.command import CommandRegistry
@@ -13,6 +14,8 @@ class Client:
 
         # Constants
         self.DEFAULT_PROMPT = {
+            "lead_in": "You are ",
+            "goal_label": "GOALS:\n\n",
             "constraints_label": "Constraints:\n",
             "constraints": [
                 "~4000 word limit for short term memory. Your short term memory is short, so immediately save important information to files.",
@@ -63,6 +66,7 @@ class Client:
         self.prompt_generator = PromptGenerator()
         self.command_registry = CommandRegistry()
         self.config = Config()
+        self.ai_config = AIConfig.load(self.config.ai_settings_file)
 
         # Build the command registry
         self.build_command_registry()
@@ -160,6 +164,18 @@ class Client:
                 prompt_profile = json.load(f)
         except:
             prompt_profile = self.DEFAULT_PROMPT
+
+        # Build the agent profile
+
+        prompt_string += prompt_profile['lead_in']
+        prompt_string += self.ai_config.ai_name
+        prompt_string += ', '
+        prompt_string += self.ai_config.ai_role + '\n\n'
+        prompt_string += prompt_profile['goal_label']
+
+        # Goals
+        for i, goal in enumerate(self.ai_config.ai_goals):
+            prompt_string += f"{i+1}. {goal}\n"
 
         # Build prompt strings
         for constraint in prompt_profile['constraints']:
