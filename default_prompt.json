@@ -39,5 +39,6 @@
             }
         }
     },
-    "response_format_post_prompt": " \nEnsure the response can be parsed by Python json.loads"
+    "response_format_post_prompt": " \nEnsure the response can be parsed by Python json.loads",
+    "postscript": ""
 }

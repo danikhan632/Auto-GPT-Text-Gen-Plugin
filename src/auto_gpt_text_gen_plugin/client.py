@@ -55,7 +55,8 @@ class Client:
                 }
             },
             "response_format_post_prompt": " \nEnsure the response can be parsed by Python json.loads",
-            "closing_command": "Determine which next command to use, and respond using the format specified above:"
+            "closing_command": "Determine which next command to use, and respond using the format specified above:",
+            "postscript": ""
         }
 
         # Load environment variables
@@ -202,6 +203,7 @@ class Client:
         prompt_string += prompt_profile['response_format_pre_prompt']
         prompt_string += json.dumps(prompt_profile['response_format'])
         prompt_string += prompt_profile['response_format_post_prompt']
+        prompt_string += '\n' + prompt_profile['postscript']
 
         return prompt_string
 
