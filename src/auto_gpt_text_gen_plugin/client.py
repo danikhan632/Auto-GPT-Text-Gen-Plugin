@@ -10,11 +10,61 @@ from autogpt.commands.command import CommandRegistry
     
 class Client:
     def __init__(self):
+
+        # Constants
+        self.DEFAULT_PROMPT = {
+            "constraints_label": "Constraints:\n",
+            "constraints": [
+                "~4000 word limit for short term memory. Your short term memory is short, so immediately save important information to files.",
+                "If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.",
+                "No user assistance",
+                "Exclusively use the commands listed in double quotes e.g. \"command name\""
+            ],
+            "commands_label": "Commands:\n",
+            "resources_label": "Resources:\n",
+            "resources": [
+                "Internet access for searches and information gathering.",
+                "Long Term memory management.",
+                "GPT-3.5 powered Agents for delegation of simple tasks."
+            ],
+            "performance_eval_label": "Performance Evaluation:\n",
+            "performance_eval": [
+                "Continuously review and analyze your actions to ensure you are performing to the best of your abilities.",
+                "Constructively self-criticize your big-picture behavior constantly.",
+                "Reflect on past decisions and strategies to refine your approach.",
+                "Every command has a cost, so be smart and efficient. Aim to complete tasks in the least number of steps.",
+                "Write all code to a file."
+            ],
+            "response_format_pre_prompt": "You should only respond in JSON format as described below \nResponse Format: \n",
+            "response_format": {
+                "thoughts": {
+                    "text": "thought",
+                    "reasoning": "reasoning",
+                    "plan": "- short bulleted\n- list that conveys\n- long-term plan",
+                    "criticism": "constructive self-criticism",
+                    "speak": "thoughts summary to say to user"
+                },
+                "command": {
+                    "name": "command name",
+                    "args": {
+                        "arg name": "value"
+                    }
+                }
+            },
+            "response_format_post_prompt": " \nEnsure the response can be parsed by Python json.loads",
+            "closing_command": "Determine which next command to use, and respond using the format specified above:"
+        }
+
+        # Load environment variables
         self.base_url = os.environ.get('LOCAL_LLM_BASE_URL', "http://127.0.0.1:5000/")
+        self.prompt_profile = os.environ.get('LOCAL_LLM_PROMPT_PROFILE', '')
+
+        # Initialize variables
         self.prompt_generator = PromptGenerator()
         self.command_registry = CommandRegistry()
         self.config = Config()
 
+        # Build the command registry
         self.build_command_registry()
 
         logger.debug(
@@ -102,53 +152,42 @@ class Client:
         Build the prompt for the API.
         """
 
-        constraints = [
-            'Always save important info to files.'
-            'Only use commands in double quotes (e.g. "command name").'
-        ]
-        resources = [
-            'Internet search'
-            'Long term memory'
-            'Simple agents for Q&A'
-            'File output'
-        ]
-        evaluations = [
-            'Always review/analyze your actions are at peak efficiency.'
-            'Constantly self-critique your big-picture planning.'
-            'Reflect on past decisions to refine your apporoach.'
-            'Complete tasks in the fewest steps possible.'
-            'Save code to a file'
-        ]
+        prompt_string = ''
 
-        for constraint in constraints:
+        # Load the prompt profile and use defaults if that fails.
+        try:
+            with open(self.prompt_profile, 'r') as f:
+                prompt_profile = json.load(f)
+        except:
+            prompt_profile = self.DEFAULT_PROMPT
+
+        # Build prompt strings
+        for constraint in prompt_profile['constraints']:
             self.prompt_generator.add_constraint(constraint)
 
-        for resource in resources:
+        for resource in prompt_profile['resources']:
             self.prompt_generator.add_resource(resource)
 
-        for evaluation in evaluations:
+        for evaluation in prompt_profile['performance_eval']:
             self.prompt_generator.add_performance_evaluation(evaluation)
 
         for idx, cmd in enumerate(self.command_registry.commands):
             self.prompt_generator.add_command(cmd, idx)
 
-        self.prompt_generator.response_format = {
-            "thoughts": {
-                "text": "<your thought>",
-                "reasoning": "<your reasoning>",
-                "plan": "<your plan as a list>",
-                "criticism": "<your self-criticism>",
-                "speak": "<your message to the user",
-            },
-            "command": {
-                "name": "<selected command>",
-                "args": {
-                    "arg name": "<arg value>"
-                }   
-            }
-        }
+        # Assemble
+        prompt_string += prompt_profile['constraints_label']
+        prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.constraints)
+        prompt_string += prompt_profile['commands_label']
+        prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.commands, item_type='command')
+        prompt_string += prompt_profile['resources_label']
+        prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.resources)
+        prompt_string += prompt_profile['performance_eval_label']
+        prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.performance_evaluation)
+        prompt_string += prompt_profile['response_format_pre_prompt']
+        prompt_string += json.dumps(prompt_profile['response_format'])
+        prompt_string += prompt_profile['response_format_post_prompt']
 
-        return self.prompt_generator.generate_prompt_string()
+        return prompt_string
 
 
     def create_chat_completion(self, messages, temperature, max_tokens):
