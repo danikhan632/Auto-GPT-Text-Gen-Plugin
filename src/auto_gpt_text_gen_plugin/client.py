@@ -13,50 +13,53 @@ class Client:
     def __init__(self):
 
         # Constants
-        self.DEFAULT_PROMPT = {
-            "lead_in": "You are ",
-            "goal_label": "GOALS:\n\n",
-            "constraints_label": "Constraints:\n",
-            "constraints": [
-                "~4000 word limit for short term memory. Your short term memory is short, so immediately save important information to files.",
-                "If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.",
-                "No user assistance",
-                "Exclusively use the commands listed in double quotes e.g. \"command name\""
-            ],
-            "commands_label": "Commands:\n",
-            "resources_label": "Resources:\n",
-            "resources": [
-                "Internet access for searches and information gathering.",
-                "Long Term memory management.",
-                "GPT-3.5 powered Agents for delegation of simple tasks."
-            ],
-            "performance_eval_label": "Performance Evaluation:\n",
-            "performance_eval": [
-                "Continuously review and analyze your actions to ensure you are performing to the best of your abilities.",
-                "Constructively self-criticize your big-picture behavior constantly.",
-                "Reflect on past decisions and strategies to refine your approach.",
-                "Every command has a cost, so be smart and efficient. Aim to complete tasks in the least number of steps.",
-                "Write all code to a file."
-            ],
-            "response_format_pre_prompt": "You should only respond in JSON format as described below \nResponse Format: \n",
-            "response_format": {
-                "thoughts": {
-                    "text": "thought",
-                    "reasoning": "reasoning",
-                    "plan": "- short bulleted\n- list that conveys\n- long-term plan",
-                    "criticism": "constructive self-criticism",
-                    "speak": "thoughts summary to say to user"
-                },
-                "command": {
-                    "name": "command name",
-                    "args": {
-                        "arg name": "value"
+        self.DEFAULT_PROMPT_MONO = {
+            "template_type": "monolithic",
+            "strings": {
+                "lead_in": "You are ",
+                "goal_label": "GOALS:\n\n",
+                "constraints_label": "Constraints:\n",
+                "constraints": [
+                    "~4000 word limit for short term memory. Your short term memory is short, so immediately save important information to files.",
+                    "If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.",
+                    "No user assistance",
+                    "Exclusively use the commands listed in double quotes e.g. \"command name\""
+                ],
+                "commands_label": "Commands:\n",
+                "resources_label": "Resources:\n",
+                "resources": [
+                    "Internet access for searches and information gathering.",
+                    "Long Term memory management.",
+                    "GPT-3.5 powered Agents for delegation of simple tasks."
+                ],
+                "performance_eval_label": "Performance Evaluation:\n",
+                "performance_eval": [
+                    "Continuously review and analyze your actions to ensure you are performing to the best of your abilities.",
+                    "Constructively self-criticize your big-picture behavior constantly.",
+                    "Reflect on past decisions and strategies to refine your approach.",
+                    "Every command has a cost, so be smart and efficient. Aim to complete tasks in the least number of steps.",
+                    "Write all code to a file."
+                ],
+                "response_format_pre_prompt": "You should only respond in JSON format as described below \nResponse Format: \n",
+                "response_format": {
+                    "thoughts": {
+                        "text": "thought",
+                        "reasoning": "reasoning",
+                        "plan": "- short bulleted\n- list that conveys\n- long-term plan",
+                        "criticism": "constructive self-criticism",
+                        "speak": "thoughts summary to say to user"
+                    },
+                    "command": {
+                        "name": "command name",
+                        "args": {
+                            "arg name": "value"
+                        }
                     }
-                }
-            },
-            "response_format_post_prompt": " \nEnsure the response can be parsed by Python json.loads",
-            "closing_command": "Determine which next command to use, and respond using the format specified above:",
-            "postscript": ""
+                },
+                "response_format_post_prompt": " \nEnsure the response can be parsed by Python json.loads",
+                "closing_command": "Determine which next command to use, and respond using the format specified above:",
+                "postscript": ""
+            }
         }
 
         # Load environment variables
@@ -164,46 +167,46 @@ class Client:
             with open(self.prompt_profile, 'r') as f:
                 prompt_profile = json.load(f)
         except:
-            prompt_profile = self.DEFAULT_PROMPT
+            prompt_profile = self.DEFAULT_PROMPT_MONO
 
         # Build the agent profile
 
-        prompt_string += prompt_profile['lead_in']
+        prompt_string += prompt_profile['strings']['lead_in']
         prompt_string += self.ai_config.ai_name
         prompt_string += ', '
         prompt_string += self.ai_config.ai_role + '\n\n'
-        prompt_string += prompt_profile['goal_label']
+        prompt_string += prompt_profile['strings']['goal_label']
 
         # Goals
         for i, goal in enumerate(self.ai_config.ai_goals):
             prompt_string += f"{i+1}. {goal}\n"
 
         # Build prompt strings
-        for constraint in prompt_profile['constraints']:
+        for constraint in prompt_profile['strings']['constraints']:
             self.prompt_generator.add_constraint(constraint)
 
-        for resource in prompt_profile['resources']:
+        for resource in prompt_profile['strings']['resources']:
             self.prompt_generator.add_resource(resource)
 
-        for evaluation in prompt_profile['performance_eval']:
+        for evaluation in prompt_profile['strings']['performance_eval']:
             self.prompt_generator.add_performance_evaluation(evaluation)
 
         for idx, cmd in enumerate(self.command_registry.commands):
             self.prompt_generator.add_command(cmd, idx)
 
         # Assemble
-        prompt_string += prompt_profile['constraints_label']
+        prompt_string += prompt_profile['strings']['constraints_label']
         prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.constraints)
-        prompt_string += prompt_profile['commands_label']
+        prompt_string += prompt_profile['strings']['commands_label']
         prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.commands, item_type='command')
-        prompt_string += prompt_profile['resources_label']
+        prompt_string += prompt_profile['strings']['resources_label']
         prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.resources)
-        prompt_string += prompt_profile['performance_eval_label']
+        prompt_string += prompt_profile['strings']['performance_eval_label']
         prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.performance_evaluation)
-        prompt_string += prompt_profile['response_format_pre_prompt']
+        prompt_string += prompt_profile['strings']['response_format_pre_prompt']
         prompt_string += json.dumps(prompt_profile['response_format'])
-        prompt_string += prompt_profile['response_format_post_prompt']
-        prompt_string += '\n' + prompt_profile['postscript']
+        prompt_string += prompt_profile['strings']['response_format_post_prompt']
+        prompt_string += '\n' + prompt_profile['strings']['postscript']
 
         return prompt_string
 
