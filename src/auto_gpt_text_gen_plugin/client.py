@@ -1,12 +1,12 @@
-import requests
-import os
 import json
+import os
+import re
+import requests
 from colorama import Fore, Style
 from autogpt.config import Config
 from autogpt.config.ai_config import AIConfig
 from autogpt.logs import logger
 from autogpt.prompts.generator import PromptGenerator
-from autogpt.commands.command import CommandRegistry
 
     
 class Client:
@@ -68,12 +68,8 @@ class Client:
 
         # Initialize variables
         self.prompt_generator = PromptGenerator()
-        self.command_registry = CommandRegistry()
         self.config = Config()
         self.ai_config = AIConfig.load(self.config.ai_settings_file)
-
-        # Build the command registry
-        self.build_command_registry()
 
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}"
@@ -120,44 +116,15 @@ class Client:
         return message_string
     
 
-    def build_command_registry(self) -> CommandRegistry:
-        """
-        Build the command registry needed for prompt building
-
-        Returns:
-            CommandRegistry: The command registry to work against
-        """
-
-        # TODO: Fix me. This is a terrible idea. When this functionality
-        # is modularized, replace this code.
-
-        command_categories = [
-            "autogpt.commands.analyze_code",
-            "autogpt.commands.audio_text",
-            "autogpt.commands.execute_code",
-            "autogpt.commands.file_operations",
-            "autogpt.commands.git_operations",
-            "autogpt.commands.google_search",
-            "autogpt.commands.image_gen",
-            "autogpt.commands.improve_code",
-            "autogpt.commands.twitter",
-            "autogpt.commands.web_selenium",
-            "autogpt.commands.write_tests",
-            "autogpt.app",
-            "autogpt.commands.task_statuses",
-        ]
-
-        command_categories = [
-            x for x in command_categories if x not in self.config.disabled_command_categories
-        ]
-
-        for command_category in command_categories:
-            self.command_registry.import_commands(command_category)
-    
-
-    def build_prompt_payload(self) -> str:
+    def build_prompt_payload(self, commands:str = '') -> str:
         """ 
         Build the prompt for the API.
+
+        Args:
+            commands (str): The commands to add to the prompt. Defaults to ''.
+
+        Returns:
+            str: The prompt to send to the API.
         """
 
         prompt_string = ''
@@ -191,28 +158,45 @@ class Client:
         for evaluation in prompt_profile['strings']['performance_eval']:
             self.prompt_generator.add_performance_evaluation(evaluation)
 
-        for idx, cmd in enumerate(self.command_registry.commands):
-            self.prompt_generator.add_command(cmd, idx)
-
         # Assemble
         prompt_string += prompt_profile['strings']['constraints_label']
         prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.constraints)
         prompt_string += prompt_profile['strings']['commands_label']
-        prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.commands, item_type='command')
+        prompt_string += commands
         prompt_string += prompt_profile['strings']['resources_label']
         prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.resources)
         prompt_string += prompt_profile['strings']['performance_eval_label']
         prompt_string += self.prompt_generator._generate_numbered_list(self.prompt_generator.performance_evaluation)
         prompt_string += prompt_profile['strings']['response_format_pre_prompt']
-        prompt_string += json.dumps(prompt_profile['response_format'])
+        prompt_string += json.dumps(prompt_profile['strings']['response_format'])
         prompt_string += prompt_profile['strings']['response_format_post_prompt']
         prompt_string += '\n' + prompt_profile['strings']['postscript']
 
         return prompt_string
+    
 
+    def extract_commands(self, message = '') -> str:
+        """
+        Extract commands from the system prompt
+        
+        Args:
+            message (str): The message to extract commands from. Defaults to ''.
+        
+        Returns:
+            str: The extracted commands as a string.
+        """
+
+        try:
+            match = re.search(r"(Commands:.*?Resources:)", message, re.DOTALL)
+            match = match.group(1).strip()
+            return match
+        except:
+            return ''
+        
 
     def create_chat_completion(self, messages, temperature, max_tokens):
-        messages[0]['content'] = self.build_prompt_payload()
+        commands = self.extract_commands(messages[0]['content'])
+        messages[0]['content'] = self.build_prompt_payload(commands)
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Creating chat completion with messages {messages}\n"
             f" and temperature {temperature}\n"
