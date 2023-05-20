@@ -10,8 +10,8 @@ strings:
   general_guidance:
   - Your decisions must always be made independently without seeking user assistance.
   - Play to your strengths as an LLM and pursue simple strategies with no legal complications.
-  os_prompt: '\nThe OS you are running on is: '
-  goal_label: "\n\nGOALS:\n\n"
+  os_prompt: '\n\nThe OS you are running on is: '
+  goal_label: ".\n\nGOALS:\n\n"
   constraints_label: 'Constraints:\n'
   constraints:
   - "~4000 word limit for short term memory. Your short term memory is short, so immediately
@@ -20,13 +20,13 @@ strings:
     thinking about similar events will help you remember.
   - No user assistance
   - Exclusively use the commands listed in double quotes e.g. "command name"
-  commands_label: 'Commands:\n'
-  resources_label: 'Resources:\n'
+  commands_label: '\n\nCommands:\n'
+  resources_label: '\n\nResources:\n'
   resources:
   - Internet access for searches and information gathering.
   - Long Term memory management.
   - GPT-3.5 powered Agents for delegation of simple tasks.
-  performance_eval_label: 'Performance Evaluation:\n'
+  performance_eval_label: '\n\nPerformance Evaluation:\n'
   performance_eval:
   - Continuously review and analyze your actions to ensure you are performing to the
     best of your abilities.
@@ -35,6 +35,7 @@ strings:
   - Every command has a cost, so be smart and efficient. Aim to complete tasks in
     the least number of steps.
   - Write all code to a file.
+  response_format_label: '\n\nResponse Format:\n'
   response_format_pre_prompt: "You should only respond in JSON format as described
     below \nResponse Format: \n"
   response_format_post_prompt: " \nEnsure the response can be parsed by Python json.loads"
