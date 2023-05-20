@@ -27,6 +27,9 @@ class MonolithicPrompt(PromptEngine):
         # Prime the variables
         message_string = ''
 
+        if not self.is_ai_system_prompt(self.original_system_msg):
+            return self.messages_to_conversation(messages, self.USER_NAME)
+
         # Rebuild prompt
         message_string += self.USER_NAME
         message_string += self.get_ai_profile()
@@ -38,14 +41,8 @@ class MonolithicPrompt(PromptEngine):
         message_string = self.get_profile_attribute('prescript') + message_string
         message_string += self.get_profile_attribute('postscript') + '\n\n'
 
-        # Loop from index 1 of messages to the end
-        for message in messages[1:]:
-            message_string += f'{self.USER_NAME}'
-            new_message = self.strip_newlines(message['content'])
-            new_message = self.remove_whitespace(new_message)
-            message_string += message['content'] + '\n\n'
-
+        # Add all the other messages
+        message_string += self.messages_to_conversation(messages[1:], self.USER_NAME)
         message_string += self.get_agent_name() + ': '
-
 
         return message_string

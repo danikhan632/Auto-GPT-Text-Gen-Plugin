@@ -26,6 +26,23 @@ class PromptEngine:
         self.regex_split_commands = r'\d+\.'
 
 
+    def is_ai_system_prompt(self, prompt:str) -> bool:
+        """
+        Check if the prompt is a system prompt used for standard roleplay
+
+        Args:
+            prompt (str): The prompt to check.
+
+        Returns:
+            bool: True if the prompt is a RP prompt, False otherwise.
+        """
+
+        prompt = self.strip_newlines(prompt)
+        prompt = self.remove_whitespace(prompt)
+
+        return prompt.startswith('You are')
+
+
     def remove_whitespace(self, text:str) -> str:
         """
         Flatten multiple whitespace characters into a single space.
@@ -388,3 +405,24 @@ class PromptEngine:
 
         return str(response)
 
+
+    def messages_to_conversation(self, messages:list, attribution:str = '') -> str:
+        """
+        Convert a list of messages to a conversation.
+        
+        Args:
+            messages (list): The messages to convert.
+            attribution (str): The attribution to use for the messages.
+            
+        Returns:
+            str: The conversation.
+        """
+
+        response = ''
+
+        for message in messages:
+            clean_message = self.strip_newlines(message['content'])
+            clean_message = self.remove_whitespace(clean_message)
+            response += attribution + clean_message + '\n\n'
+
+        return str(response)
