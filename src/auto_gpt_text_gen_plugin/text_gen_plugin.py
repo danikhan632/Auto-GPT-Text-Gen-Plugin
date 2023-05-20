@@ -1,5 +1,6 @@
-import json
 import yaml
+from autogpt.logs import logger
+from colorama import Fore, Style
 from .client import Client
 
 
@@ -86,12 +87,16 @@ class TextGenPluginController():
             dict|list|str|None: The loaded prompt profile.
         """
 
+        response = None
         try:
             with open(prompt_profile, 'r') as f:
-                data = yaml.load(f, Loader=yaml.FullLoader)
-                return data
+                response = yaml.load(f, Loader=yaml.FullLoader)
         except:
-            return None
+            pass
+
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Loaded prompt profile:\n{response}\n\n")
+
+        return response
         
     
     def handle_chat_completion(self, messages, temperature, max_tokens) -> str:

@@ -21,15 +21,13 @@ class Client:
         self.API_ENDPOINT_GENERATE = '/api/v1/generate'
 
         # Which prompt manager to use
-        if self.prompt_profile == "monolithic":
+        if self.prompt_profile['template_type'] == "monolithic":
             self.prompt_manager = MonolithicPrompt(self.prompt_profile)
         else:
             print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} No prompt type was defined in the profile. Using the generic monolithic prompt.")
             self.prompt_manager = MonolithicPrompt(self.prompt_profile)
 
-        logger.debug(
-            f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}"
-        )
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}")
         # self.headers = {
         #     "api_key": self.api_key 
         # }
