@@ -2,19 +2,30 @@ import json
 import os
 import re
 import requests
-from monolithic_prompt import MonolithicPrompt
-from colorama import Fore, Style
+from .monolithic_prompt import MonolithicPrompt
 from autogpt.logs import logger
+from colorama import Fore, Style
 
-    
+
 class Client:
-    def __init__(self):
+    """API support for Text Gen WebUI's vanilla API plugin"""
 
-        # Load environment variables
-        self.base_url = os.environ.get('LOCAL_LLM_BASE_URL', "http://127.0.0.1:5000/")
-        self.prompt_profile = os.environ.get('LOCAL_LLM_PROMPT_PROFILE', '')
-        self.prompt_type = self.load_prompt_type()
-        self.prompt_manager = MonolithicPrompt(self.prompt_profile)
+    def __init__(self, base_url, prompt_profile):
+        """Constructor"""
+
+        # Initialize the prompt manager
+        self.base_url = base_url
+        self.prompt_profile = prompt_profile
+
+        # Constants
+        self.API_ENDPOINT_GENERATE = '/api/v1/generate'
+
+        # Which prompt manager to use
+        if self.prompt_profile == "monolithic":
+            self.prompt_manager = MonolithicPrompt(self.prompt_profile)
+        else:
+            print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} No prompt type was defined in the profile. Using the generic monolithic prompt.")
+            self.prompt_manager = MonolithicPrompt(self.prompt_profile)
 
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}"
@@ -22,70 +33,70 @@ class Client:
         # self.headers = {
         #     "api_key": self.api_key 
         # }
-
-
-    def load_prompt_type(self) -> str:
-        """Load the prompt type from the defined file."""
-
-        try:
-            with open(self.prompt_profile, 'r') as f:
-                prompt_profile_json = json.load(f)
-                return prompt_profile_json['template_type']
-        except:
-            return "monolithic"
-        
-
-    def extract_commands(self, message = '') -> str:
-        """
-        Extract commands from the system prompt
-        
-        Args:
-            message (str): The message to extract commands from. Defaults to ''.
-        
-        Returns:
-            str: The extracted commands as a string.
-        """
-
-        try:
-            match = re.search(r"(Commands:.*?Resources:)", message, re.DOTALL)
-            match = match.group(1).strip()
-            return match
-        except:
-            return ''
         
 
     def create_chat_completion(self, messages, temperature, max_tokens):
-        commands = self.extract_commands(messages[0]['content'])
-        messages[0]['content'] = self.prompt_manager.build_prompt_payload(commands)
+        """
+        Create a chat completion API call to Text Gen WebUI
+
+        Args:
+            messages (list): The messages to be used as context.
+            temperature (float): The temperature to use for the completion.
+            max_tokens (int): The maximum number of tokens to generate.
+
+        Returns:
+            str: The resulting response.
+        """
+
+        # Preflight debug
         logger.debug(
-            f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Creating chat completion with messages {messages}\n"
-            f" and temperature {temperature}\n"
-            f" and max_tokens {max_tokens}"
+            f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Creating chat completion with:\n{json.dumps(messages, indent=4)}\n"
+            f"... and temperature {temperature}\n"
+            f"... and max_tokens {max_tokens}\n\n"
         )
+
+        # Token defaults
         if max_tokens is None:
             max_tokens=400
         if float(temperature)==0.0:
             temperature=0.01
-        reshaped_messages = self.prompt_manager.reshape_message(messages)
-        logger.debug(
-            f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Reshaped messages to:\n{reshaped_messages}"
-        )
-        request = {'prompt': reshaped_messages, 'temperature': float(temperature), 'max_tokens': int(max_tokens)}
 
-        response = requests.post(self.base_url+'/api/v1/generate', json=request)
+        # Reshape the messages
+        messages = self.prompt_manager.reshape_message(messages)
+        logger.debug(
+            f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Reshaped messages to:\n{messages}"
+        )
+
+        # API call
+        request = {
+            'prompt': messages, 
+            'temperature': float(temperature), 
+            'max_tokens': int(max_tokens)
+        }
+        response = requests.post(self.base_url + self.API_ENDPOINT_GENERATE, json=request)
         
+        # Process the result
         if response.status_code == 200:
+
+            # Make JSON
+            try:
+                response_json = response.json()
+            except:
+                response_json = {'results': [{'text': ''}]}
+
+            # Debug
             logger.debug(
-                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Got response {response.json()}"
+                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Got response:\n{response_json}\n\n"
             )
-            response = response.json()
-            resp = response['results'][0]['text']
-            resp = self.remove_whitespace(resp)
+
+            # Return
+            text_response = response_json['results'][0]['text']
+            text_response = self.prompt_manager.remove_whitespace(text_response)
             logger.debug(
-                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Returning response:\n {resp}\n"
-                f"(with formatted JSON: \n{resp}\n\n"
+                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Returning response:\n {text_response}\n"
+                f"(as JSON: \n{response_json}\n\n"
             )
-            return resp
+            return text_response
         else:
             logger.debug(
                 f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}\n"

@@ -1,11 +1,13 @@
 """This is a template for Auto-GPT plugins."""
-import abc
+import os
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, TypedDict
 from auto_gpt_plugin_template import AutoGPTPluginTemplate
+from autogpt.prompts.generator import PromptGenerator
+from .text_gen_plugin import TextGenPluginController
 
 PromptGenerator = TypeVar("PromptGenerator")
 
-from .client import Client
+
 class Message(TypedDict):
     role: str
     content: str
@@ -21,7 +23,11 @@ class AutoGPTTextGenPlugin(AutoGPTPluginTemplate):
         self._name = "Auto-GPT-Text-Gen"
         self._version = "0.1.0"
         self._description = "This is a plugin for AutoGPT to generate text"
-        self.cli= Client()
+
+        # Initialize the controller
+        base_url = os.environ.get('LOCAL_LLM_BASE_URL', "http://127.0.0.1:5000/")
+        prompt_profile = os.environ.get('LOCAL_LLM_PROMPT_PROFILE', None)
+        self.controller=TextGenPluginController(self, base_url, prompt_profile)
         
     
     def can_handle_on_response(self) -> bool:
@@ -185,7 +191,7 @@ class AutoGPTTextGenPlugin(AutoGPTPluginTemplate):
         Returns:
             Tuple[str, Dict[str, Any]]: The command name and the arguments.
         """
-        return "",{"",None}
+        return "", {}
 
     
     def can_handle_post_command(self) -> bool:
@@ -241,8 +247,7 @@ class AutoGPTTextGenPlugin(AutoGPTPluginTemplate):
         Returns:
             str: The resulting response.
         """
-        # print(messages)
-        return self.cli.create_chat_completion(messages, temperature, max_tokens)
+        return self.controller.handle_chat_completion(messages, temperature, max_tokens)
 
     
     def can_handle_text_embedding(
@@ -266,7 +271,7 @@ class AutoGPTTextGenPlugin(AutoGPTPluginTemplate):
         Returns:
             list: The text embedding.
         """
-        return self.cli.get_embedding(text)
+        return self.controller.handle_get_embedding(text)
 
     
     def can_handle_user_input(self, user_input: str) -> bool:
