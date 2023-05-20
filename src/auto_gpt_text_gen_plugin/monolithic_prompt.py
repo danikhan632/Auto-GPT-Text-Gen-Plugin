@@ -36,7 +36,7 @@ class MonolithicPrompt(PromptEngine):
         message_string += self.get_ai_critique()
         message_string += self.get_response_format()
         message_string = self.get_profile_attribute('prescript') + message_string
-        message_string += self.get_profile_attribute('postscript')
+        message_string += self.get_profile_attribute('postscript') + '\n\n'
 
         # Loop from index 1 of messages to the end
         for message in messages[1:]:
