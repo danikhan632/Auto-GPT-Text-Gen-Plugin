@@ -2,6 +2,7 @@ import json
 import os
 import re
 import requests
+from .default_prompt import DefaultPrompt
 from .monolithic_prompt import MonolithicPrompt
 from autogpt.logs import logger
 from colorama import Fore, Style
@@ -21,11 +22,10 @@ class Client:
         self.API_ENDPOINT_GENERATE = '/api/v1/generate'
 
         # Which prompt manager to use
-        if self.prompt_profile['template_type'] == "monolithic":
+        if self.prompt_profile is not None and 'template_type' in self.prompt_profile and self.prompt_profile['template_type'] == "monolithic":
             self.prompt_manager = MonolithicPrompt(self.prompt_profile)
         else:
-            print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} No prompt type was defined in the profile. Using the generic monolithic prompt.")
-            self.prompt_manager = MonolithicPrompt(self.prompt_profile)
+            self.prompt_manager = DefaultPrompt(self.prompt_profile)
 
         logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}")
         # self.headers = {

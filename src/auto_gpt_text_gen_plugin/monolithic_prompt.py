@@ -1,4 +1,3 @@
-import json
 from autogpt.logs import logger
 from .prompt_engine import PromptEngine
 
