@@ -223,7 +223,9 @@ class PromptEngine:
         
         # Combine the list into a string with new lines between each item.
         for i, item in enumerate(response_list):
-            response += f'{i}. {item}\n'
+            clean_item = self.remove_whitespace(item)
+            if clean_item != '':
+                response += f'{i}. {item}\n'
 
         return str(response)
     

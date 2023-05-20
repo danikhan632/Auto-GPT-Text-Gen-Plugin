@@ -40,7 +40,7 @@ class MonolithicPrompt(PromptEngine):
 
         # Loop from index 1 of messages to the end
         for message in messages[1:]:
-            message_string += f'\n\n\{self.USER_NAME}'
+            message_string += f'{self.USER_NAME}'
             new_message = self.strip_newlines(message['content'])
             new_message = self.remove_whitespace(new_message)
             message_string += message['content'] + '\n\n'
