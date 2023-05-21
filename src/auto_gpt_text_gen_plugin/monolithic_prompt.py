@@ -27,15 +27,16 @@ class MonolithicPrompt(PromptEngine):
 
         # Prime the variables
         message_string = ''
+        user_name = self.get_user_name() + ': '
 
         if not self.is_ai_system_prompt(self.original_system_msg):
             logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} The system message is not an agent prompt, returning original message\n\n")
-            return self.messages_to_conversation(messages, self.USER_NAME)
+            return self.messages_to_conversation(messages, user_name)
         else:
             logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} The system message is an agent prompt, continuing\n\n")
 
         # Rebuild prompt
-        message_string += self.USER_NAME
+        message_string += user_name
         message_string += self.get_ai_profile()
         message_string += self.get_ai_constraints()
         message_string += self.get_commands()
@@ -47,7 +48,7 @@ class MonolithicPrompt(PromptEngine):
 
         # Add all the other messages
         end_strip = self.get_end_strip()
-        message_string += self.messages_to_conversation(messages[1:-end_strip], self.USER_NAME)
+        message_string += self.messages_to_conversation(messages[1:-end_strip], user_name)
         message_string += self.get_agent_name() + ': '
 
         return message_string

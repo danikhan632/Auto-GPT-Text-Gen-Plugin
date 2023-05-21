@@ -8,9 +8,6 @@ class PromptEngine:
 
     def __init__(self):
 
-        # Constants
-        self.USER_NAME = "User: "
-
         # Pull-in from Auto-GPT
         self.prompt_generator = PromptGenerator()
         self.config = Config()
@@ -94,6 +91,17 @@ class PromptEngine:
         """
 
         return {}
+    
+
+    def get_user_name(self) -> str:
+        """
+        Return the user's name from the prompt profile.
+
+        Returns:
+            str: The user's name.
+        """
+
+        return self.get_profile_attribute('send_as')
 
 
     def get_profile_attribute(self, attribute:str, container:str = '') -> str:
