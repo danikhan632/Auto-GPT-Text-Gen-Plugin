@@ -10,7 +10,7 @@ class TextGenPluginController():
     multiple APIs
     """
 
-    def __init__(self, plugin, base_url, prompt_profile):
+    def __init__(self, plugin, base_url, prompt_profile_path):
         """
         Args:
             plugin (AutoGPTPluginTemplate): The plugin that is using this controller.
@@ -19,11 +19,11 @@ class TextGenPluginController():
         self._plugin = plugin
 
         # Load the profile
-        prompt_config = self.load_prompt_config(prompt_profile)
+        prompt_config = self.load_prompt_config(prompt_profile_path)
         self.api = Client(base_url, prompt_config)
 
 
-    def load_prompt_config(self, prompt_profile) -> dict|list|str|None:
+    def load_prompt_config(self, path) -> dict|list|str|None:
         """
         Load the prompt from the defined file.
 
@@ -36,13 +36,12 @@ class TextGenPluginController():
 
         response = None
         try:
-            with open(prompt_profile, 'r') as f:
+            with open(path, 'r') as f:
                 response = yaml.load(f, Loader=yaml.FullLoader)
-        except:
-            pass
-
-        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Loaded prompt profile:\n{response}\n\n")
-
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Loaded prompt profile:\n{response}\n\n")
+        except Exception as e:
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Error {e}, no prompt profile loaded\n\n")
+            
         return response
         
     
