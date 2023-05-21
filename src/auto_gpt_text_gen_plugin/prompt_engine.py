@@ -102,6 +102,17 @@ class PromptEngine:
         """
 
         return self.get_profile_attribute('send_as')
+    
+
+    def get_ai_chat_name(self) -> str:
+        """
+        Get the name of the AI to use when building chat messages
+        
+        Returns:
+            str: The AI's name.
+        """
+
+        return self.get_profile_attribute('ai_name')
 
 
     def get_profile_attribute(self, attribute:str, container:str = '') -> str:
