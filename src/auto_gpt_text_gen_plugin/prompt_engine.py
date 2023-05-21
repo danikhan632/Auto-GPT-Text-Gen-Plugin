@@ -418,6 +418,24 @@ class PromptEngine:
         return str(response)
     
 
+    def get_end_strip(self) -> int:
+        """
+        Get the end strip index from the profile.
+        
+        Returns:
+            int: The end strip index.
+        """
+
+        end_index = 0
+
+        try:
+            end_index = self.get_profile_attribute('strip_messages_from_end')
+        except:
+            pass
+
+        return int(end_index)
+    
+
     def get_response_format(self) -> str:
         """
         Build the response format string

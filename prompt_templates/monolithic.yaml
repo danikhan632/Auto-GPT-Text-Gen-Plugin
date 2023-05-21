@@ -1,6 +1,10 @@
 # This defines the type of the template. Don't remove it.
 template_type: monolithic
 
+# Message processing variables
+# These variables are used to process Auto-GPT's input array of messages into a string
+strip_messages_from_end: 0        # Only used when an RP prompt is sent to the LLM
+
 # This text preceeds the LLM prompt. It is non-standard but may be useful to you.
 prescript: ""
 

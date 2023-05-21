@@ -46,7 +46,8 @@ class MonolithicPrompt(PromptEngine):
         message_string += self.get_profile_attribute('postscript') + '\n\n'
 
         # Add all the other messages
-        message_string += self.messages_to_conversation(messages[1:], self.USER_NAME)
+        end_strip = self.get_end_strip()
+        message_string += self.messages_to_conversation(messages[1:-end_strip], self.USER_NAME)
         message_string += self.get_agent_name() + ': '
 
         return message_string
