@@ -1,7 +1,8 @@
 """This is a template for Auto-GPT plugins."""
 import os
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, TypedDict
 from auto_gpt_plugin_template import AutoGPTPluginTemplate
+from colorama import Fore, Style
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, TypedDict
 from autogpt.prompts.generator import PromptGenerator
 from .text_gen_plugin import TextGenPluginController
 
@@ -26,8 +27,9 @@ class AutoGPTTextGenPlugin(AutoGPTPluginTemplate):
 
         # Initialize the controller
         base_url = os.environ.get('LOCAL_LLM_BASE_URL', "http://127.0.0.1:5000/")
-        prompt_profile = os.environ.get('LOCAL_LLM_PROMPT_PROFILE', None)
-        self.controller=TextGenPluginController(self, base_url, prompt_profile)
+        prompt_profile_path = os.environ.get('LOCAL_LLM_PROMPT_PROFILE', None)
+        print(f">>>>> Auto-GPT-Text-Gen-Plugin: Using profile at path: {prompt_profile_path}")
+        self.controller=TextGenPluginController(self, base_url, prompt_profile_path)
         
     
     def can_handle_on_response(self) -> bool:

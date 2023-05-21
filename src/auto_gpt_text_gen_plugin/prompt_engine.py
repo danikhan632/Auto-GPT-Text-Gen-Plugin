@@ -8,9 +8,6 @@ class PromptEngine:
 
     def __init__(self):
 
-        # Constants
-        self.USER_NAME = "User: "
-
         # Pull-in from Auto-GPT
         self.prompt_generator = PromptGenerator()
         self.config = Config()
@@ -86,6 +83,25 @@ class PromptEngine:
         """
 
         pass
+
+
+    def reshape_response(self, message) -> dict:
+        """
+        Inhereted method
+        """
+
+        return {}
+    
+
+    def get_user_name(self) -> str:
+        """
+        Return the user's name from the prompt profile.
+
+        Returns:
+            str: The user's name.
+        """
+
+        return self.get_profile_attribute('send_as')
 
 
     def get_profile_attribute(self, attribute:str, container:str = '') -> str:
@@ -247,6 +263,28 @@ class PromptEngine:
         return str(response)
     
 
+    def list_to_yaml_string(self, old_list:list) -> str:
+        """
+        Convert a list to a YAML list string.
+        
+        Args:
+            old_list (list): The list to convert.
+
+        Returns:
+            str: The YAML list string.
+        """
+
+        response = ''
+
+        # Combine the list into a string where each item starts with a dash and a space
+        for item in old_list:
+            clean_item = self.remove_whitespace(item)
+            if clean_item != '':
+                response += f'- {item}\n'
+
+        return response
+    
+
     def get_as_json(self, attribute:str, container:str = '') -> str:
         """
         Get an attribute from the AI config as a JSON string.
@@ -386,6 +424,24 @@ class PromptEngine:
         response += self.get_profile_numbered_list('performance_eval', 'strings')
 
         return str(response)
+    
+
+    def get_end_strip(self) -> int:
+        """
+        Get the end strip index from the profile.
+        
+        Returns:
+            int: The end strip index.
+        """
+
+        end_index = 0
+
+        try:
+            end_index = self.get_profile_attribute('strip_messages_from_end')
+        except:
+            pass
+
+        return int(end_index)
     
 
     def get_response_format(self) -> str:

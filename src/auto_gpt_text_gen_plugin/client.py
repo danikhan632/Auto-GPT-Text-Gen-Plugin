@@ -27,6 +27,7 @@ class Client:
         else:
             self.prompt_manager = DefaultPrompt(self.prompt_profile)
 
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using prompt manager {self.prompt_manager.__class__.__name__}\n")
         logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}")
         # self.headers = {
         #     "api_key": self.api_key 
@@ -90,6 +91,7 @@ class Client:
             # Return
             text_response = response_json['results'][0]['text']
             text_response = self.prompt_manager.remove_whitespace(text_response)
+            text_response = self.prompt_manager.reshape_response(text_response)
             logger.debug(
                 f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Returning response:\n {text_response}\n"
                 f"(as JSON: \n{response_json}\n\n"
