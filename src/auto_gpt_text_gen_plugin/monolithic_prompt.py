@@ -1,4 +1,5 @@
 from autogpt.logs import logger
+from colorama import Fore, Style
 from .prompt_engine import PromptEngine
 
 class MonolithicPrompt(PromptEngine):
@@ -27,7 +28,10 @@ class MonolithicPrompt(PromptEngine):
         message_string = ''
 
         if not self.is_ai_system_prompt(self.original_system_msg):
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} The system message is not an agent prompt, returning original message\n\n")
             return self.messages_to_conversation(messages, self.USER_NAME)
+        else:
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} The system message is an agent prompt, continuing\n\n")
 
         # Rebuild prompt
         message_string += self.USER_NAME

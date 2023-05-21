@@ -27,6 +27,7 @@ class Client:
         else:
             self.prompt_manager = DefaultPrompt(self.prompt_profile)
 
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using prompt manager {self.prompt_manager.__class__.__name__}\n")
         logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}")
         # self.headers = {
         #     "api_key": self.api_key 
