@@ -88,6 +88,14 @@ class PromptEngine:
         pass
 
 
+    def reshape_response(self, message) -> dict:
+        """
+        Inhereted method
+        """
+
+        return {}
+
+
     def get_profile_attribute(self, attribute:str, container:str = '') -> str:
         """
         Get an attribute from the AI config.
@@ -245,6 +253,28 @@ class PromptEngine:
                 response += f'{i}. {item}\n'
 
         return str(response)
+    
+
+    def list_to_yaml_string(self, old_list:list) -> str:
+        """
+        Convert a list to a YAML list string.
+        
+        Args:
+            old_list (list): The list to convert.
+
+        Returns:
+            str: The YAML list string.
+        """
+
+        response = ''
+
+        # Combine the list into a string where each item starts with a dash and a space
+        for item in old_list:
+            clean_item = self.remove_whitespace(item)
+            if clean_item != '':
+                response += f'- {item}\n'
+
+        return response
     
 
     def get_as_json(self, attribute:str, container:str = '') -> str:
