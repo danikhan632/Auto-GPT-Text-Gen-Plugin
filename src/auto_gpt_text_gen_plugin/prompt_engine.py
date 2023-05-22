@@ -8,6 +8,23 @@ class PromptEngine:
 
     def __init__(self):
 
+        # Constants
+        self.RESPONSE_OBJECT = {
+            'thoughts': {
+                "text": "",
+                "reasoning": "",
+                "plan": "",
+                "criticism": "",
+                "speak": ""
+            },
+            "command": {
+                "name": "",
+                "args": {
+                    "arg name": ""
+                }
+            }
+        }
+
         # Pull-in from Auto-GPT
         self.prompt_generator = PromptGenerator()
         self.config = Config()
@@ -493,3 +510,52 @@ class PromptEngine:
             response += attribution + clean_message + '\n\n'
 
         return str(response)
+    
+
+    def match_prop(self, srctext, regexp) -> str:
+        """
+        Match a property named tag using a regular expression.
+        
+        Args:
+            srctext (str): The text to inspect
+            regexp (str): The regular expression to use.
+            
+        Returns:
+            str: The matched property.
+        """
+
+        response = ''
+
+        srctext = self.strip_newlines(srctext)
+        srctext = self.remove_whitespace(srctext)
+        regex_result = re.search(regexp, srctext)
+        if regex_result is not None:
+            try:
+                response = regex_result.group(1)
+            except:
+                response = ''
+
+        return response
+    
+
+    def recover_json_response(self, message:str) -> dict:
+        """
+        Recover a JSON response from a message.
+        
+        Args:
+            message (str): The message to recover the JSON from.
+            
+        Returns:
+            str: The JSON response.
+        """
+
+        response = self.RESPONSE_OBJECT.copy()
+
+        response['thoughts']['text'] = self.match_prop(message, r"[\"']text[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['reasoning'] = self.match_prop(message, r"[\"']reasoning[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['plan'] = self.match_prop(message, r"[\"']plan[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['criticism'] = self.match_prop(message, r"[\"']criticism[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['speak'] = self.match_prop(message, r"[\"']speak[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['command']['name'] = self.match_prop(message, r"[\"']name[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        
+        return response

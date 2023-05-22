@@ -54,7 +54,7 @@ class MonolithicPrompt(PromptEngine):
         return message_string
     
 
-    def reshape_response(self, message:str) -> str:
+    def reshape_response(self, message:str) -> dict:
         """
         Convert the API response to a dictionary, then convert thoughts->plan to a YAML list
         then return a JSON string of the object
@@ -66,16 +66,14 @@ class MonolithicPrompt(PromptEngine):
             str: The response as a dictionary, or the original message if it cannot be converted.
         """
 
+        message_str = json.dumps(message)
+        message_str = message_str.strip()
         try:
-            message_dict = json.loads(message)
-        except:
-            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not convert message to JSON, returning original message\n\n")
-            return message
+            message_dict = json.loads(message_str)
+        except json.decoder.JSONDecodeError as e:
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not convert message to JSON: ({e})\n")
+            message_dict = self.recover_json_response(message)
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Attempted to recover JSON response.\n\n")
+            return message_dict
 
-        if isinstance(message_dict, dict):
-            plan = message_dict.get('thoughts', {}).get('plan')
-            if plan is not None:
-                message_dict['thoughts']['plan'] = self.list_to_yaml_string(plan)
-                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted thoughts->plan to YAML list\n\n")
-
-        return json.dumps(message_dict)
+        return message_dict

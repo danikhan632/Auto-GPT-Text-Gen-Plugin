@@ -85,12 +85,11 @@ class Client:
 
             # Debug
             logger.debug(
-                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Got response:\n{response_json}\n\n"
+                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Got API response:\n{response_json}\n\n"
             )
 
             # Return
             text_response = response_json['results'][0]['text']
-            text_response = self.prompt_manager.remove_whitespace(text_response)
             text_response = self.prompt_manager.reshape_response(text_response)
             logger.debug(
                 f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Returning response:\n {text_response}\n"
