@@ -21,4 +21,4 @@ class DefaultPrompt(PromptEngine):
             str: String representation of the messages.
         """
 
-        return self.messages_to_conversation(messages, self.USER_NAME)
+        return self.messages_to_conversation(messages, 'User: ')
