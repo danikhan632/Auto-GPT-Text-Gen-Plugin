@@ -185,7 +185,7 @@ class PromptEngine:
 
         goals_list = ''
         for i, goal in enumerate(self.ai_config.ai_goals):
-            goals_list += f"{i+1}. {goal}\n"
+            goals_list += f"{i+1}. {goal.strip()}\n"
 
         return str(goals_list).replace('\\n', '\n')
     
@@ -379,7 +379,7 @@ class PromptEngine:
 
         response += self.get_profile_attribute('lead_in', 'strings')
         response += self.get_agent_name() + ', '
-        response += self.get_agent_role() + ' '
+        response += self.get_agent_role()
         response += self.get_profile_list_as_line('general_guidance', 'strings')
         response += self.get_profile_attribute('os_prompt', 'strings')
         response += self.extract_from_original(self.regex_os)
