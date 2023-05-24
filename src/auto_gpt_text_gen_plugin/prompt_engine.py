@@ -8,6 +8,23 @@ class PromptEngine:
 
     def __init__(self):
 
+        # Constants
+        self.RESPONSE_OBJECT = {
+            'thoughts': {
+                "text": "",
+                "reasoning": "",
+                "plan": "",
+                "criticism": "",
+                "speak": ""
+            },
+            "command": {
+                "name": "",
+                "args": {
+                    "arg name": ""
+                }
+            }
+        }
+
         # Pull-in from Auto-GPT
         self.prompt_generator = PromptGenerator()
         self.config = Config()
@@ -102,6 +119,17 @@ class PromptEngine:
         """
 
         return self.get_profile_attribute('send_as')
+    
+
+    def get_ai_chat_name(self) -> str:
+        """
+        Get the name of the AI to use when building chat messages
+        
+        Returns:
+            str: The AI's name.
+        """
+
+        return self.get_profile_attribute('ai_name')
 
 
     def get_profile_attribute(self, attribute:str, container:str = '') -> str:
@@ -157,7 +185,7 @@ class PromptEngine:
 
         goals_list = ''
         for i, goal in enumerate(self.ai_config.ai_goals):
-            goals_list += f"{i+1}. {goal}\n"
+            goals_list += f"{i+1}. {goal.strip()}\n"
 
         return str(goals_list).replace('\\n', '\n')
     
@@ -351,7 +379,7 @@ class PromptEngine:
 
         response += self.get_profile_attribute('lead_in', 'strings')
         response += self.get_agent_name() + ', '
-        response += self.get_agent_role() + ' '
+        response += self.get_agent_role()
         response += self.get_profile_list_as_line('general_guidance', 'strings')
         response += self.get_profile_attribute('os_prompt', 'strings')
         response += self.extract_from_original(self.regex_os)
@@ -482,3 +510,52 @@ class PromptEngine:
             response += attribution + clean_message + '\n\n'
 
         return str(response)
+    
+
+    def match_prop(self, srctext, regexp) -> str:
+        """
+        Match a property named tag using a regular expression.
+        
+        Args:
+            srctext (str): The text to inspect
+            regexp (str): The regular expression to use.
+            
+        Returns:
+            str: The matched property.
+        """
+
+        response = ''
+
+        srctext = self.strip_newlines(srctext)
+        srctext = self.remove_whitespace(srctext)
+        regex_result = re.search(regexp, srctext)
+        if regex_result is not None:
+            try:
+                response = regex_result.group(1)
+            except:
+                response = ''
+
+        return response
+    
+
+    def recover_json_response(self, message:str) -> dict:
+        """
+        Recover a JSON response from a message.
+        
+        Args:
+            message (str): The message to recover the JSON from.
+            
+        Returns:
+            str: The JSON response.
+        """
+
+        response = self.RESPONSE_OBJECT.copy()
+
+        response['thoughts']['text'] = self.match_prop(message, r"[\"']text[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['reasoning'] = self.match_prop(message, r"[\"']reasoning[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['plan'] = self.match_prop(message, r"[\"']plan[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['criticism'] = self.match_prop(message, r"[\"']criticism[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['thoughts']['speak'] = self.match_prop(message, r"[\"']speak[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        response['command']['name'] = self.match_prop(message, r"[\"']name[\"']\s*:\s*[\"']((?:[^\"\\]|\\.)*)[\"']")
+        
+        return response

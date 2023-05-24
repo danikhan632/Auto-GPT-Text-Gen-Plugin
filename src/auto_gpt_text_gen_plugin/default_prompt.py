@@ -21,4 +21,18 @@ class DefaultPrompt(PromptEngine):
             str: String representation of the messages.
         """
 
-        return self.messages_to_conversation(messages, self.USER_NAME)
+        return self.messages_to_conversation(messages, 'User: ')
+    
+
+    def reshape_response(self, message):
+        """
+        Pass-back message as a dictionary.
+        
+        Args:
+            message (str): The message to reshape.
+            
+        Returns:
+            dict: The message as a dictionary.
+        """
+
+        return message
