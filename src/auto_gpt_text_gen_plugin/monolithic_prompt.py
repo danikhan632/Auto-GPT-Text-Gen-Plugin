@@ -61,9 +61,8 @@ class MonolithicPrompt(PromptEngine):
         # Add all the other messages
         end_strip = self.get_end_strip()
         message_string += self.messages_to_conversation(messages[1:-end_strip], user_name)
-        message_string += chat_name
-
         message_string += '[End History]\n\n'
+        message_string += chat_name
 
         message_string += self.get_profile_attribute('postscript')
 
