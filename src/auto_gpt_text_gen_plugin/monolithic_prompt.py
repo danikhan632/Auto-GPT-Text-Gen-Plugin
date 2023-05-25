@@ -50,11 +50,14 @@ class MonolithicPrompt(PromptEngine):
         message_string += self.get_response_format()
         message_string = self.get_profile_attribute('prescript') + message_string
 
-        message_string += '[==Begin History==]\n\n'
-        # Add all the other messages
         end_strip = self.get_end_strip()
-        message_string += self.messages_to_conversation(messages[1:-end_strip], send_as_name)
-        message_string += '[==End History==]\n\n'
+        history = self.messages_to_conversation(messages[1:-end_strip], send_as_name)
+        if history not in ['', None, 'None'] and len(history) > 0:
+            message_string += self.get_profile_attribute('history_start') + '\n\n'
+            message_string += history
+            message_string += self.get_profile_attribute('history_end') + '\n\n'
+        else:
+            message_string += self.get_profile_attribute('history_none') + '\n\n'
 
         postscript = self.get_profile_attribute('postscript')
         if postscript not in ['', None, 'None'] and len(postscript) > 0:
