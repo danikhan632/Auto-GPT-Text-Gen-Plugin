@@ -81,12 +81,10 @@ class MonolithicPrompt(PromptEngine):
 
         message_str = json.dumps(message)
         message_str = message_str.strip()
-        try:
-            message_dict = json.loads(message_str)
-        except json.decoder.JSONDecodeError as e:
-            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not convert message to JSON: ({e})\n")
-            message_dict = self.recover_json_response(message)
-            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Attempted to recover JSON response.\n\n")
-            return message_dict
+        message_str = self.remove_whitespace(message_str)
+        message_str = self.strip_newlines(message_str)
+        
+        converted_obj = json.loads(message_str)
+        converted_obj = self.simple_response_to_autogpt_response(converted_obj)
 
-        return message_dict
+        return converted_obj

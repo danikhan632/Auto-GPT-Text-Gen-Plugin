@@ -54,20 +54,16 @@ history_start: '--Begin History--'
 history_end: '--End History--'
 history_none: '--No History--'
 
-# This YAML corresponds to the JSON format expected back by Auto-GPT to carry out the next
-# step in the process. Don't change the keys, but you can change the values to suit your LLM.
+# This YAML corresponds to a simplified JSON format that is translated by the plugin into the
+# format expected by Auto-GPT.
 response_format:
-  thoughts:
-    text: thought
-    reasoning: reasoning
-    plan: |-
-      - short bulleted
-      - list that conveys
-      - long-term plan
-    criticism: constructive self-criticism
-    speak: thoughts summary to say to user
-  command:
-    name: command name
-    args:
-      arg name: value
-  
+  plan_summary: <str>
+  reasoning: <str>
+  actions: 
+    - <str n>
+  considerations: <str>
+  tts_msg: <str>
+  command_name: <str>
+  args:
+    - name: <str-n>
+      value: <str-n>

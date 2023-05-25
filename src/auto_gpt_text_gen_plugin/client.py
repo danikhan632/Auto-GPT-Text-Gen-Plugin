@@ -56,7 +56,7 @@ class Client:
 
         # Token defaults
         if max_tokens is None:
-            max_tokens=400
+            max_tokens=600
         if float(temperature)==0.0:
             temperature=0.01
 

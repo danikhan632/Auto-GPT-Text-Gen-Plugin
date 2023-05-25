@@ -2,7 +2,9 @@ import json
 import re
 from autogpt.config import Config
 from autogpt.config.ai_config import AIConfig
+from autogpt.logs import logger
 from autogpt.prompts.generator import PromptGenerator
+from colorama import Fore, Style
 
 class PromptEngine:
 
@@ -25,6 +27,16 @@ class PromptEngine:
             }
         }
 
+        self.SIMPLE_RESPONSE_FORMAT = {
+            "plan_summary": "",
+            "reasoning": "",
+            "actions": [],
+            "considerations": "",
+            "tts_msg": "",
+            "command_name": "",
+            "command_args": []
+        }
+
         # Pull-in from Auto-GPT
         self.prompt_generator = PromptGenerator()
         self.config = Config()
@@ -38,6 +50,61 @@ class PromptEngine:
         self.regex_os = r'The OS you are running on is:(.*?)\n\nGOALS'
         self.regex_commands = r'Commands:(.*?)\n\nResources'
         self.regex_split_commands = r'\d+\.'
+
+
+    def simple_response_to_autogpt_response(self, simple_response:str) -> dict:
+        """
+        Convert a simple response to an Auto-GPT response
+        
+        Args:
+            simple_response (dict): The simple response to convert.
+            
+        Returns:
+            dict: The converted response.
+        """
+
+        response = self.RESPONSE_OBJECT.copy()
+
+        original_response = json.loads(simple_response)
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converting from simple format: {simple_response}\n\n")
+
+        response['thoughts']['text'] = original_response['plan_summary']
+        response['thoughts']['reasoning'] = original_response['reasoning']
+
+        if isinstance(original_response['actions'], str):
+            response['thoughts']['plan'] = self.string_to_yaml(original_response['actions'])
+        elif isinstance(original_response['actions'], list):
+            response['thoughts']['plan'] = self.string_to_yaml("\n".join(original_response['actions']))
+
+        response['thoughts']['criticism'] = original_response['considerations']
+        response['thoughts']['speak'] = original_response['tts_msg']
+        response['command']['name'] = original_response['command_name']
+
+        # args are objects of name: value pairs
+        for arg in original_response['command_args']:
+            arg_name = arg['name']
+            arg_value = arg['value']
+            response['command']['args'][arg_name] = arg_value
+
+        return response
+    
+
+    def string_to_yaml(self, string:str) -> str:
+        """
+        Convert a string to a YAML list with leading dashes.
+        
+        Args:
+            string (str): The string to convert.
+            
+        Returns:
+            str: The converted string.
+        """
+
+        string = string.strip()
+        string = string.replace('\n', '\n- ')
+        string = f"- {string}"
+
+        return string
 
 
     def is_ai_system_prompt(self, prompt:str) -> bool:
