@@ -50,9 +50,9 @@ strings:
 postscript: ""
 
 # History tags
-history_start = '--Begin History--'
-history_end = '--End History--'
-history_none = '--No History--'
+history_start: '--Begin History--'
+history_end: '--End History--'
+history_none: '--No History--'
 
 # This YAML corresponds to the JSON format expected back by Auto-GPT to carry out the next
 # step in the process. Don't change the keys, but you can change the values to suit your LLM.
