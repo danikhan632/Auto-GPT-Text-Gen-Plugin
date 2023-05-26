@@ -52,7 +52,7 @@ class PromptEngine:
         self.regex_split_commands = r'\d+\.'
 
 
-    def simple_response_to_autogpt_response(self, simple_response:str) -> dict:
+    def simple_response_to_autogpt_response(self, simple_response:str) -> str:
         """
         Convert a simple response to an Auto-GPT response
         
@@ -65,28 +65,43 @@ class PromptEngine:
 
         response = self.RESPONSE_OBJECT.copy()
 
-        original_response = json.loads(simple_response)
-        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converting from simple format: {simple_response}\n\n")
+        try:
+            original_response = json.loads(simple_response)
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converting from simple format: {simple_response}\n\n")
 
-        response['thoughts']['text'] = original_response['plan_summary']
-        response['thoughts']['reasoning'] = original_response['reasoning']
+            if 'plan_summary' in original_response:
+                response['thoughts']['text'] = original_response['plan_summary']
 
-        if isinstance(original_response['actions'], str):
-            response['thoughts']['plan'] = self.string_to_yaml(original_response['actions'])
-        elif isinstance(original_response['actions'], list):
-            response['thoughts']['plan'] = self.string_to_yaml("\n".join(original_response['actions']))
+            if 'reasoning' in original_response:
+                response['thoughts']['reasoning'] = original_response['reasoning']
 
-        response['thoughts']['criticism'] = original_response['considerations']
-        response['thoughts']['speak'] = original_response['tts_msg']
-        response['command']['name'] = original_response['command_name']
+            if 'actions' in original_response:
+                if isinstance(original_response['actions'], str):
+                    response['thoughts']['plan'] = self.string_to_yaml(original_response['actions'])
+                elif isinstance(original_response['actions'], list):
+                    response['thoughts']['plan'] = self.string_to_yaml("\n".join(original_response['actions']))
 
-        # args are objects of name: value pairs
-        for arg in original_response['command_args']:
-            arg_name = arg['name']
-            arg_value = arg['value']
-            response['command']['args'][arg_name] = arg_value
+            if 'considerations' in original_response:
+                response['thoughts']['criticism'] = original_response['considerations']
 
-        return response
+            if 'tts_msg' in original_response:
+                response['thoughts']['speak'] = original_response['tts_msg']
+
+            if 'command_name' in original_response:
+                response['command']['name'] = original_response['command_name']
+
+            # args are objects of name: value pairs
+            if 'command_args' in original_response:
+                for arg in original_response['command_args']:
+                    arg_name = arg['name']
+                    arg_value = arg['value']
+                    response['command']['args'][arg_name] = arg_value
+
+        except Exception as e:
+            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Error converting simple response to Auto-GPT response: {e}")
+            response['thoughts']['text'] = simple_response
+
+        return json.dumps(response)
     
 
     def string_to_yaml(self, string:str) -> str:
