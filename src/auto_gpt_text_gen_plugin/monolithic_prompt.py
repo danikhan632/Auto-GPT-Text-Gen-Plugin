@@ -1,4 +1,5 @@
 import json
+import yaml
 from autogpt.logs import logger
 from colorama import Fore, Style
 from .prompt_engine import PromptEngine
@@ -67,7 +68,7 @@ class MonolithicPrompt(PromptEngine):
         return message_string
     
 
-    def reshape_response(self, message:str) -> dict:
+    def reshape_response(self, message:str) -> str:
         """
         Convert the API response to a dictionary, then convert thoughts->plan to a YAML list
         then return a JSON string of the object
@@ -79,12 +80,15 @@ class MonolithicPrompt(PromptEngine):
             str: The response as a dictionary, or the original message if it cannot be converted.
         """
 
-        message_str = json.dumps(message)
+        message_str = message.replace('--BEGIN YAML--', '')
+        message_str = message_str.replace('---END YAML---', '')
         message_str = message_str.strip()
-        message_str = self.remove_whitespace(message_str)
-        message_str = self.strip_newlines(message_str)
-        
-        converted_obj = json.loads(message_str)
-        converted_obj = self.simple_response_to_autogpt_response(converted_obj)
+        message_data = yaml.safe_load(message_str)
+
+        try:
+            converted_obj = self.simple_response_to_autogpt_response(message_data)
+        except:
+            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not convert the response to a dictionary, returning original message\n\n")
+            return message
 
         return converted_obj

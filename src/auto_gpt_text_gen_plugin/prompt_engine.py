@@ -52,7 +52,7 @@ class PromptEngine:
         self.regex_split_commands = r'\d+\.'
 
 
-    def simple_response_to_autogpt_response(self, simple_response:str) -> str:
+    def simple_response_to_autogpt_response(self, simple_response:dict) -> str:
         """
         Convert a simple response to an Auto-GPT response
         
@@ -66,40 +66,39 @@ class PromptEngine:
         response = self.RESPONSE_OBJECT.copy()
 
         try:
-            original_response = json.loads(simple_response)
-            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converting from simple format: {simple_response}\n\n")
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converting from simple format: {json.dumps(simple_response, indent=4)}\n\n")
 
-            if 'plan_summary' in original_response:
-                response['thoughts']['text'] = original_response['plan_summary']
+            if 'plan_summary' in simple_response:
+                response['thoughts']['text'] = simple_response['plan_summary']
 
-            if 'reasoning' in original_response:
-                response['thoughts']['reasoning'] = original_response['reasoning']
+            if 'reasoning' in simple_response:
+                response['thoughts']['reasoning'] = simple_response['reasoning']
 
-            if 'actions' in original_response:
-                if isinstance(original_response['actions'], str):
-                    response['thoughts']['plan'] = self.string_to_yaml(original_response['actions'])
-                elif isinstance(original_response['actions'], list):
-                    response['thoughts']['plan'] = self.string_to_yaml("\n".join(original_response['actions']))
+            if 'actions' in simple_response:
+                if isinstance(simple_response['actions'], str):
+                    response['thoughts']['plan'] = self.string_to_yaml(simple_response['actions'])
+                elif isinstance(simple_response['actions'], list):
+                    response['thoughts']['plan'] = self.string_to_yaml("\n".join(simple_response['actions']))
 
-            if 'considerations' in original_response:
-                response['thoughts']['criticism'] = original_response['considerations']
+            if 'considerations' in simple_response:
+                response['thoughts']['criticism'] = simple_response['considerations']
 
-            if 'tts_msg' in original_response:
-                response['thoughts']['speak'] = original_response['tts_msg']
+            if 'tts_msg' in simple_response:
+                response['thoughts']['speak'] = simple_response['tts_msg']
 
-            if 'command_name' in original_response:
-                response['command']['name'] = original_response['command_name']
+            if 'command_name' in simple_response:
+                response['command']['name'] = simple_response['command_name']
 
             # args are objects of name: value pairs
-            if 'command_args' in original_response:
-                for arg in original_response['command_args']:
+            if 'args' in simple_response:
+                for arg in simple_response['args']:
                     arg_name = arg['name']
                     arg_value = arg['value']
                     response['command']['args'][arg_name] = arg_value
 
         except Exception as e:
             logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Error converting simple response to Auto-GPT response: {e}")
-            response['thoughts']['text'] = simple_response
+            response['thoughts']['text'] = json.dumps(simple_response, indent=4)
 
         return json.dumps(response)
     
@@ -233,6 +232,27 @@ class PromptEngine:
             response = self.prompt_profile[container][attribute]
 
         return str(response).replace('\\n', '\n')
+    
+
+    def get_profile_attribute_as_raw(self, attribute:str, container:str = '') -> str:
+        """
+        Get an attribute from the AI config.
+
+        Args:
+            attribute (str): The attribute to get.
+
+        Returns:
+            str: The attribute's value.
+        """
+
+        response = ''
+
+        if container == '' and attribute in self.prompt_profile:
+            response = self.prompt_profile[attribute]
+        elif container in self.prompt_profile and attribute in self.prompt_profile[container]:
+            response = self.prompt_profile[container][attribute]
+
+        return str(response)
 
     
     def get_agent_name(self) -> str:
@@ -566,7 +586,7 @@ class PromptEngine:
 
         response += self.get_profile_attribute('response_format_label', 'strings')
         response += self.get_profile_attribute('response_format_pre_prompt', 'strings')
-        response += self.get_as_json('response_format')
+        response += self.get_profile_attribute_as_raw('response_format')
         response += self.get_profile_attribute('response_format_post_prompt', 'strings')
 
         return str(response)

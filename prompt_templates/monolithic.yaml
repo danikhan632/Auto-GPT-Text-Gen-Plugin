@@ -42,9 +42,9 @@ strings:
     the least number of steps.
   - Write all code to a file.
   response_format_label: '\n\nResponse Format:\n'
-  response_format_pre_prompt: "You should only respond in JSON format as described
-    below \nResponse Format: \n"
-  response_format_post_prompt: " \nEnsure the response can be parsed by Python json.loads"
+  response_format_pre_prompt: "You should only respond in YAML format as described
+    below \nResponse Format: \n\n--BEGIN YAML--\n"
+  response_format_post_prompt: " \n--END YAML--\n\nEnsure the response can be parsed by Python.\n\nHistory:\n"
 
 # This string appears at the end of the LLM prompt. It is non-standard but may be useful to you.
 postscript: ""
@@ -56,14 +56,6 @@ history_none: '--No History--'
 
 # This YAML corresponds to a simplified JSON format that is translated by the plugin into the
 # format expected by Auto-GPT.
-response_format:
-  plan_summary: <str>
-  reasoning: <str>
-  actions: 
-    - <str n>
-  considerations: <str>
-  tts_msg: <str>
-  command_name: <str>
-  args:
-    - name: <str-n>
-      value: <str-n>
+response_format: "plan_summary: <str>\nreasoning: <str>\nactions:\n  - <str n>
+  \nconsiderations: <str>\ntts_msg: <str>\ncommand_name: <str>\nargs:\n  - name: <str-n>
+  \n    value: <str-n>"
