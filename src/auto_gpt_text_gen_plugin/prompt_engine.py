@@ -78,7 +78,7 @@ class PromptEngine:
                 if isinstance(simple_response['actions'], str):
                     response['thoughts']['plan'] = self.string_to_yaml(simple_response['actions'])
                 elif isinstance(simple_response['actions'], list):
-                    response['thoughts']['plan'] = self.string_to_yaml("\n".join(simple_response['actions']))
+                    response['thoughts']['plan'] = '\n'.join(simple_response['actions'])
 
             if 'considerations' in simple_response:
                 response['thoughts']['criticism'] = simple_response['considerations']

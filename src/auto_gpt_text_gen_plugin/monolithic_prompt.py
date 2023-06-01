@@ -83,9 +83,8 @@ class MonolithicPrompt(PromptEngine):
         message_str = message.replace('--BEGIN YAML--', '')
         message_str = message_str.replace('---END YAML---', '')
         message_str = message_str.strip()
-        message_data = yaml.safe_load(message_str)
-
         try:
+            message_data = yaml.safe_load(message_str)
             converted_obj = self.simple_response_to_autogpt_response(message_data)
         except:
             logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not convert the response to a dictionary, returning original message\n\n")

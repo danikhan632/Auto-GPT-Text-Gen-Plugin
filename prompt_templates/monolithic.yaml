@@ -56,6 +56,6 @@ history_none: '--No History--'
 
 # This YAML corresponds to a simplified JSON format that is translated by the plugin into the
 # format expected by Auto-GPT.
-response_format: "plan_summary: <str>\nreasoning: <str>\nactions:\n  - <str n>
-  \nconsiderations: <str>\ntts_msg: <str>\ncommand_name: <str>\nargs:\n  - name: <str-n>
-  \n    value: <str-n>"
+response_format: 'plan_summary: "<str>"\nreasoning: "<str>"\nactions:\n  - "<str n>"
+  \nconsiderations: "<str>"\ntts_msg: "<str>"\ncommand_name: "<str>"\nargs:\n  - name: "<str-n>"
+  \n    value: "<str-n>"'
