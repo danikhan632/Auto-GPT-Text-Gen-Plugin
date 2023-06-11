@@ -19,6 +19,7 @@ class Client:
         self.prompt_profile = prompt_profile
 
         # Constants
+        self.MAX_RESPONSE_TOKENS = 100
         self.API_ENDPOINT_GENERATE = '/api/v1/generate'
         self.API_ENDPOINT_MODELS = '/api/v1/model'
         self.API_ENDPOINT_TOKENCOUNT = '/api/v1/token-count'
@@ -44,7 +45,7 @@ class Client:
         # }
         
 
-    def create_chat_completion(self, messages, temperature, max_tokens):
+    def create_chat_completion(self, messages, temperature):
         """
         Create a chat completion API call to Text Gen WebUI
 
@@ -60,21 +61,23 @@ class Client:
         # Preflight debug
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Creating chat completion with:\n{json.dumps(messages, indent=4)}\n"
-            f"... and temperature {temperature}\n"
-            f"... and max_tokens {max_tokens}\n\n"
+            f"... and temperature {temperature}\n\n"
         )
-
-        # Token defaults
-        if max_tokens is None:
-            max_tokens=600
-        if float(temperature)==0.0:
-            temperature=0.01
 
         # Reshape the messages
         messages = self.prompt_manager.reshape_message(messages)
         logger.debug(
             f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Reshaped messages to:\n{messages}"
         )
+
+        # Calculate tokens
+        max_tokens = 0
+        tokens = 0
+        tokens = self.calculate_token_length(messages)
+        if (self.context_size - tokens) > self.MAX_RESPONSE_TOKENS:
+            max_tokens = self.MAX_RESPONSE_TOKENS
+        else:
+            max_tokens = self.context_size - tokens
 
         # API call
         request = {

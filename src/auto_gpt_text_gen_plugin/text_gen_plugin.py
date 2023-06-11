@@ -58,7 +58,7 @@ class TextGenPluginController():
             str: The resulting response.
         """
         
-        return self.api.create_chat_completion(messages, temperature, max_tokens)
+        return self.api.create_chat_completion(messages, temperature)
     
     
     def handle_get_embedding(self, text) -> list:
