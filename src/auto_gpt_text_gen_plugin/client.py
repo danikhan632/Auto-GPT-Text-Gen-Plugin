@@ -21,6 +21,7 @@ class Client:
         # Constants
         self.API_ENDPOINT_GENERATE = '/api/v1/generate'
         self.API_ENDPOINT_MODELS = '/api/v1/model'
+        self.API_ENDPOINT_TOKENCOUNT = '/api/v1/token-count'
 
         # Which prompt manager to use
         if self.prompt_profile is not None and 'template_type' in self.prompt_profile and self.prompt_profile['template_type'] == "monolithic":
@@ -249,3 +250,40 @@ class Client:
             os._exit(1)
         
         return context_size
+    
+
+    def calculate_token_length(self, message:str) -> int:
+        """
+        Calculate the length of a message in tokens.
+        
+        Args:
+            message (str): The message to calculate the length of.
+            
+        Returns:
+            int: The length of the message in tokens.
+        """
+
+        result = 0
+
+        uri = f'{self.base_url}{self.API_ENDPOINT_TOKENCOUNT}'
+
+        try:
+            post = {
+                'prompt': message
+            }
+            reply = requests.post(uri, json=post)
+
+            if reply.status_code == 200:
+                api_response = reply.json()
+                try:
+                    result = api_response['results'][0]['tokens']
+                except:
+                    pass
+        except Exception as e:
+            logger.debug(
+                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}\n"
+                f"{Fore.RED}Error trying to calculate token length: {e}{Fore.RESET}"
+            )
+            os._exit(1)
+
+        return result
