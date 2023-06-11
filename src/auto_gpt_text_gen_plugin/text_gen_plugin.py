@@ -57,8 +57,15 @@ class TextGenPluginController():
         Returns:
             str: The resulting response.
         """
+        parameters = {
+            'seed': -1,
+            'top_p': 0.1,
+            'top_k': 40,
+            'repetition_penalty': 1.18,
+            'no_repeat_ngram_size': 0
+        }
         
-        return self.api.create_chat_completion(messages, temperature)
+        return self.api.create_chat_completion(messages, temperature, max_tokens, parameters)
     
     
     def handle_get_embedding(self, text) -> list:

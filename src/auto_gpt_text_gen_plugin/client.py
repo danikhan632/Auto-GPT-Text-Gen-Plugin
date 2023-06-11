@@ -19,7 +19,7 @@ class Client:
         self.prompt_profile = prompt_profile
 
         # Constants
-        self.MAX_RESPONSE_TOKENS = 100
+        self.MAX_RESPONSE_TOKENS = 300
         self.API_ENDPOINT_GENERATE = '/api/v1/generate'
         self.API_ENDPOINT_MODELS = '/api/v1/model'
         self.API_ENDPOINT_TOKENCOUNT = '/api/v1/token-count'
@@ -45,7 +45,7 @@ class Client:
         # }
         
 
-    def create_chat_completion(self, messages, temperature):
+    def create_chat_completion(self, messages:list, temperature:float, max_tokens:int = 300, model_properties:dict = None):
         """
         Create a chat completion API call to Text Gen WebUI
 
@@ -53,6 +53,7 @@ class Client:
             messages (list): The messages to be used as context.
             temperature (float): The temperature to use for the completion.
             max_tokens (int): The maximum number of tokens to generate.
+            model_properties (dict): The properties of the model to use on submission.
 
         Returns:
             str: The resulting response.
@@ -71,20 +72,28 @@ class Client:
         )
 
         # Calculate tokens
-        max_tokens = 0
-        tokens = 0
-        tokens = self.calculate_token_length(messages)
-        if (self.context_size - tokens) > self.MAX_RESPONSE_TOKENS:
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Requested max tokens: {max_tokens}")
+        msg_size = self.calculate_token_length(messages)
+        if not isinstance(max_tokens, int) or max_tokens > self.context_size or max_tokens < 0:
             max_tokens = self.MAX_RESPONSE_TOKENS
         else:
-            max_tokens = self.context_size - tokens
+            max_tokens = self.context_size - msg_size
+
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Calculated tokens: {max_tokens}")
 
         # API call
         request = {
             'prompt': messages, 
             'temperature': float(temperature), 
-            'max_tokens': int(max_tokens)
+            'max_new_tokens': max_tokens
         }
+
+        # Merge model_properties into request
+        if model_properties is not None:
+            request.update(model_properties)
+
+        logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Sending request:\n{json.dumps(request, indent=4)}\n\n")
+
         response = requests.post(self.base_url + self.API_ENDPOINT_GENERATE, json=request)
         
         # Process the result
