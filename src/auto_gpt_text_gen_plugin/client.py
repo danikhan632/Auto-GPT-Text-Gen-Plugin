@@ -236,6 +236,7 @@ class Client:
         try:
             endpoint = f'{self.base_url}{self.API_ENDPOINT_MODELS}'
             logger.debug(f'{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}: Getting context size from {endpoint}')
+            print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Loading your model. This may take a few moments...")
             response = requests.post(endpoint, json=request)
             model_info = response.json()['result']
             context_size = model_info['shared.settings']['truncation_length']
