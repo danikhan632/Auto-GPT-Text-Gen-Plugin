@@ -43,9 +43,9 @@ If you can provide documentation about your text generation setup, I would be ha
     ```
 
 3. (Optional) Download a model:
-   I use the [anon8231489123/vicuna-13b-GPTQ-4bit-128g]{https://huggingface.co/anon8231489123/vicuna-13b-GPTQ-4bit-128g} model from Hugging Face. For guidacne on how to set-up other models, refer to the [oobabooga/text-generation-webui GitHub repository](https://github.com/oobabooga/text-generation-webui).
+   If you do not already have a model, install one. A suggestion is [anon8231489123/vicuna-13b-GPTQ-4bit-128g]{https://huggingface.co/anon8231489123/vicuna-13b-GPTQ-4bit-128g} from Hugging Face. For guidacne on how to set-up other models, refer to the [oobabooga/text-generation-webui GitHub repository](https://github.com/oobabooga/text-generation-webui).
 
-4. (Optional) Allowlist the plugin (optional):
+4. (Optional) Allowlist the plugin:
 
     Add the plugin's class name to the `ALLOWLISTED_PLUGINS` in the `.env` file to avoid being prompted with a warning when loading the plugin:
 
@@ -81,4 +81,21 @@ If you can provide documentation about your text generation setup, I would be ha
 * To change the commands sent to your model, edit the DISABLED_COMMAND_CATEGORIES variable in .env. 
 * To change the AI profile, edit the ai_settings.yaml file.
 * The purpose of the YAML file is to customize the length of the prompt sent to your model as most models are limited to 2048 tokens which is slightly more than half of the tokens available to GPT-3.5 Turbo, and 1/4 the tokens which are usable by GPT-4.
-* **When you edit this prompt, both the original prompt in Auto-GPT and the prompt you edit will show in debug output. Only the prompt from this plugin is actually sent to your model.**
+* **When you edit this prompt, both the original prompt in Auto-GPT and the prompt you edit will show in debug output. The Auto-GPT-generated prompt will not be sent.** Only the prompt from this plugin is actually sent to your model.
+
+## Selecting the installed model
+
+When starting Auto-GPT with the plugin enabled, you will have the option to select a model.
+
+* Any model that is available through TGW will be listed when Auto-GPT is started.
+* If only one model is available, it will be used automatically.
+* If more than one model is available, you will be prompted to select the model to use.
+
+Alternatively, set LOCAL_LLM_MODEL in your .env file.
+
+.env settings
+```
+LOCAL_LLM_BASE_URL=http://127.0.0.1:5000/
+LOCAL_LLM_PROMPT_PROFILE=full/path/to/your.yaml
+LOCAL_LLM_MODEL=TheBloke-Wizard-Vicuna-7B-Uncensored-GGML
+```

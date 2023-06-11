@@ -123,4 +123,5 @@ class Client:
                 f"{Fore.RED}Error: Response status code {response.status_code}{Fore.RESET}"
             )
             return ["Error"]
-
+        
+        
