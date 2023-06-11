@@ -10,7 +10,7 @@ class TextGenPluginController():
     multiple APIs
     """
 
-    def __init__(self, plugin, base_url, prompt_profile_path):
+    def __init__(self, plugin, base_url, prompt_profile_path, model):
         """
         Args:
             plugin (AutoGPTPluginTemplate): The plugin that is using this controller.
@@ -20,7 +20,7 @@ class TextGenPluginController():
 
         # Load the profile
         prompt_config = self.load_prompt_config(prompt_profile_path)
-        self.api = Client(base_url, prompt_config)
+        self.api = Client(base_url, prompt_config, model)
 
 
     def load_prompt_config(self, path) -> dict|list|str|None:

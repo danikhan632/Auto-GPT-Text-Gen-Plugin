@@ -11,7 +11,7 @@ from colorama import Fore, Style
 class Client:
     """API support for Text Gen WebUI's vanilla API plugin"""
 
-    def __init__(self, base_url, prompt_profile):
+    def __init__(self, base_url, prompt_profile, model = None):
         """Constructor"""
 
         # Initialize the prompt manager
@@ -20,12 +20,21 @@ class Client:
 
         # Constants
         self.API_ENDPOINT_GENERATE = '/api/v1/generate'
+        self.API_ENDPOINT_MODELS = '/api/v1/model'
 
         # Which prompt manager to use
         if self.prompt_profile is not None and 'template_type' in self.prompt_profile and self.prompt_profile['template_type'] == "monolithic":
             self.prompt_manager = MonolithicPrompt(self.prompt_profile)
         else:
             self.prompt_manager = DefaultPrompt(self.prompt_profile)
+
+        if model is not None:
+            self.model = model
+        else:
+            self.model = self.select_model()
+        
+        self.context_size = self.get_context_size(self.model)
+
 
         logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using prompt manager {self.prompt_manager.__class__.__name__}\n")
         logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using base url {self.base_url}")
@@ -125,3 +134,117 @@ class Client:
             return ["Error"]
         
         
+    def select_model(self) -> str:
+        """
+        Present the user with a list of models to choose from, and return the ID of the selected model.
+        
+        Returns:
+            str: The ID of the selected model.
+        """
+
+        selected_model = ''
+
+        request = {
+            'action': 'list'
+        }
+
+        model_list = ''
+
+        try:
+            endpoint = f'{self.base_url}{self.API_ENDPOINT_MODELS}'
+            logger.debug(f'{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}: Getting models from {endpoint}')
+            response = requests.post(endpoint, json=request)
+            model_list = response.json()['result']
+            if isinstance(model_list, str):
+                model_list = [model_list]
+                
+        except Exception as e:
+            logger.debug(
+                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}\n"
+                f"{Fore.RED}Error trying to get model to select: {e}{Fore.RESET}"
+            )
+            
+            # Terminate the application
+            os._exit(1)
+
+        if len(model_list) == 0:
+            raise Exception('No models found. Aborting.')
+        elif len(model_list) > 1:
+            selected_model = self.prompt_for_model(model_list)
+        else:
+            selected_model = model_list[0]
+
+        print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Using model: {selected_model}")
+
+        return selected_model
+    
+
+    def prompt_for_model(self, model_list) -> str:
+        """
+        Prompt the user to select a model
+        
+        Args:
+            model_list (list): The list of models to choose from.
+            
+        Returns:
+            str: The ID of the selected model.
+        """
+
+        model_id = ''
+
+        # Loop through the model list and present the user with a choice
+        print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Please select a model by number:")
+        model_number = 1
+        for model in model_list:
+            print(f"{model_number}) {model}")
+            model_number += 1
+
+        # Get the user's choice
+        selected_model = ''
+        while selected_model == '':
+            try:
+                selected_model = int(input(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Enter a number: "))
+                if selected_model < 1 or selected_model > len(model_list):
+                    print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Invalid selection. Please try again.")
+                    selected_model = ''
+            except:
+                print(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Invalid selection. Please try again.")
+
+        model_id = model_list[selected_model - 1]
+
+        return model_id
+
+
+    def get_context_size(self, model:str) -> int:
+        """
+        Get the context size of a model.
+        
+        Args:
+            model (str): The ID of the model to get the context size of.
+            
+        Returns:
+            int: The context size of the model.
+        """
+
+        context_size = 0
+
+        request = {
+            'action': 'load',
+            'model_name': model
+        }
+
+        try:
+            endpoint = f'{self.base_url}{self.API_ENDPOINT_MODELS}'
+            logger.debug(f'{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}: Getting context size from {endpoint}')
+            response = requests.post(endpoint, json=request)
+            model_info = response.json()['result']
+            context_size = model_info['shared.settings']['truncation_length']
+            logger.debug(f'{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}: Context size is {context_size}')
+        except Exception as e:
+            logger.debug(
+                f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET}\n"
+                f"{Fore.RED}Error trying to get context size: {e}{Fore.RESET}"
+            )
+            os._exit(1)
+        
+        return context_size
