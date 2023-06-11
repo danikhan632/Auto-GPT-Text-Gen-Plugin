@@ -80,14 +80,33 @@ class MonolithicPrompt(PromptEngine):
             str: The response as a dictionary, or the original message if it cannot be converted.
         """
 
-        message_str = message.replace('--BEGIN YAML--', '')
-        message_str = message_str.replace('---END YAML---', '')
-        message_str = message_str.strip()
+        message_str = message.strip()
+
+        # If the message has a start template tag, remove it and everything before it
+        if '--START TEMPLATE--' in message:
+            message_str = message[message.find('--START TEMPLATE--')+len('--START TEMPLATE--'):]
+
+        # If the message has an end template tag, remove it and everything after it
+        if '--END TEMPLATE--' in message:
+            message_str = message_str[:message.find('--END TEMPLATE--')]
+
+        # If \n is double-escaped, fix it.
+        if '\\n' in message_str:
+            message_str = message_str.replace('\\n', '\n')
+
+        # If a reserved YAML keyword is in the string without a new line before it, add one
+        template_keywords = ['reasoning:', 'next_steps:', 'considerations:', 'tts_msg:', 'command_name:', 'args:']
+        for keyword in template_keywords:
+            if '\n' + keyword not in message_str:
+                message_str = message_str.replace(keyword, '\n' + keyword)
+
         try:
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Attempting to convert the response to a dictionary: {message_str}\n\n")
             message_data = yaml.safe_load(message_str)
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted the YAML response to a dictionary\n\n")
             converted_obj = self.simple_response_to_autogpt_response(message_data)
-        except:
-            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not convert the response to a dictionary, returning original message\n\n")
+        except Exception as e:
+            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not reshape the response to the Auto-GPT format, returning original message: {e}\n\n")
             return message
 
         return converted_obj

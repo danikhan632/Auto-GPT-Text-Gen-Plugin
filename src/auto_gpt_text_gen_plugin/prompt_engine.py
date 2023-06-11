@@ -30,7 +30,7 @@ class PromptEngine:
         self.SIMPLE_RESPONSE_FORMAT = {
             "plan_summary": "",
             "reasoning": "",
-            "actions": [],
+            "next_steps": '',
             "considerations": "",
             "tts_msg": "",
             "command_name": "",
@@ -70,24 +70,41 @@ class PromptEngine:
 
             if 'plan_summary' in simple_response:
                 response['thoughts']['text'] = simple_response['plan_summary']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: plan_summary -> {json.dumps(response['thoughts']['text'], indent=4)}\n\n")
 
             if 'reasoning' in simple_response:
                 response['thoughts']['reasoning'] = simple_response['reasoning']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: reasoning -> {json.dumps(response['thoughts']['reasoning'], indent=4)}\n\n")
 
-            if 'actions' in simple_response:
-                if isinstance(simple_response['actions'], str):
-                    response['thoughts']['plan'] = self.string_to_yaml(simple_response['actions'])
-                elif isinstance(simple_response['actions'], list):
-                    response['thoughts']['plan'] = '\n'.join(simple_response['actions'])
+            if 'next_steps' in simple_response:
+                actions = simple_response['next_steps']
+                if isinstance(actions, str):
+                    actions = self.string_to_yaml(actions)
+                elif isinstance(actions, list):
+                    actions = self.list_to_yaml_string(actions)
+                elif isinstance(actions, dict):
+                    actions = self.dict_to_yaml_string(actions)
+                response['thoughts']['plan'] = actions
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: next_steps -> {response['thoughts']['plan']}\n\n")
 
             if 'considerations' in simple_response:
-                response['thoughts']['criticism'] = simple_response['considerations']
+                considerations = simple_response['considerations']
+                if isinstance(considerations, str):
+                    considerations = self.string_to_yaml(considerations)
+                elif isinstance(considerations, list):
+                    considerations = self.list_to_yaml_string(considerations)
+                elif isinstance(considerations, dict):
+                    considerations = self.dict_to_yaml_string(considerations)
+                response['thoughts']['criticism'] = considerations
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: considerations -> {response['thoughts']['criticism']}\n\n")
 
             if 'tts_msg' in simple_response:
                 response['thoughts']['speak'] = simple_response['tts_msg']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: tts_msg -> {json.dumps(response['thoughts']['speak'], indent=4)}\n\n")
 
             if 'command_name' in simple_response:
                 response['command']['name'] = simple_response['command_name']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: command_name -> {response['command']['name']}\n\n")
 
             # args are objects of name: value pairs
             if 'args' in simple_response:
@@ -95,6 +112,7 @@ class PromptEngine:
                     arg_name = arg['name']
                     arg_value = arg['value']
                     response['command']['args'][arg_name] = arg_value
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: args -> {json.dumps(response['command']['args'], indent=4)}\n\n")
 
         except Exception as e:
             logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Error converting simple response to Auto-GPT response: {e}")
@@ -116,7 +134,7 @@ class PromptEngine:
 
         string = string.strip()
         string = string.replace('\n', '\n- ')
-        string = f"- {string}"
+        string = f'- {string}'
 
         return string
 
@@ -408,9 +426,29 @@ class PromptEngine:
 
         # Combine the list into a string where each item starts with a dash and a space
         for item in old_list:
-            clean_item = self.remove_whitespace(item)
-            if clean_item != '':
-                response += f'- {item}\n'
+            response += f'- {item}\n'
+
+        return response
+    
+
+    def dict_to_yaml_string(self, old_dict:dict) -> str:
+        """
+        Convert a dictionary to a YAML list string where the key and value
+        are concatinated , seperated by a colon.
+        
+        Args:
+            old_dict (dict): The dictionary to convert.
+            
+        Returns:
+            str: The YAML list string.
+        """
+
+        response = ''
+
+        # Combine the dictionary into a string where each item starts with a dash and a space
+        # Each item is the key and value concatinated with a colon
+        for key, value in old_dict.items():
+            response += f' - {key}: {value}\n'
 
         return response
     

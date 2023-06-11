@@ -43,11 +43,11 @@ strings:
   - Write all code to a file.
   response_format_label: '\n\nResponse Format:\n'
   response_format_pre_prompt: "You should only respond in YAML format as described
-    below \nResponse Format: \n\n--BEGIN YAML--\n"
-  response_format_post_prompt: " \n--END YAML--\n\nEnsure the response can be parsed by Python.\n\nHistory:\n"
+    below \nResponse Format: \n\n--START TEMPLATE--\n"
+  response_format_post_prompt: " \n--END TEMPLATE--\n\nEnsure the response can be parsed by Python.\n\nHistory:\n"
 
 # This string appears at the end of the LLM prompt. It is non-standard but may be useful to you.
-postscript: ""
+postscript: "Please complete the template and reply.\n\n"
 
 # History tags
 history_start: '--Begin History--'
@@ -56,6 +56,6 @@ history_none: '--No History--'
 
 # This YAML corresponds to a simplified JSON format that is translated by the plugin into the
 # format expected by Auto-GPT.
-response_format: 'plan_summary: "<str>"\nreasoning: "<str>"\nactions:\n  - "<str n>"
-  \nconsiderations: "<str>"\ntts_msg: "<str>"\ncommand_name: "<str>"\nargs:\n  - name: "<str-n>"
-  \n    value: "<str-n>"'
+response_format: "plan_summary: <str>\nreasoning: <str>\nnext_steps:\n - <str-item1>\n - <str-itemN>\n
+  \nconsiderations: <str>\ntts_msg: <str>\ncommand_name: <str>\nargs:\n - name: <str-item1>
+  \n   value: <str-item1>\n - name: <str-itemN>\n   value: <str-itemN>"
