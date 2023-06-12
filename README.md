@@ -99,3 +99,24 @@ LOCAL_LLM_BASE_URL=http://127.0.0.1:5000/
 LOCAL_LLM_PROMPT_PROFILE=full/path/to/your.yaml
 LOCAL_LLM_MODEL=TheBloke-Wizard-Vicuna-7B-Uncensored-GGML
 ```
+
+## Changing TGW top_k, top_p, etc.
+You can change the following values using environment variables:
+
+* seed, default: -1
+* top_p, default: 0.4
+* top_k, default: 50
+* repetition_penalty, default: 1.19
+* no_repeat_ngram_size, default: 0
+
+To change these values, set the following environment variables.
+
+```
+LOCAL_LLM_SEED=32768
+LOCAL_LLM_TOP_P=0.1
+LOCAL_LLM_TOP_K=20
+LOCAL_LLM_REPETITION_PENALTY: 1.15
+LOCAL_LLM_NO_REPEAT_NGRAM_SIZE: 3
+```
+
+For information on these values, refer to [TGWUI documentation on generation parameters](https://github.com/oobabooga/text-generation-webui/blob/main/docs/Generation-parameters.md).
