@@ -132,11 +132,19 @@ class PromptEngine:
             str: The converted string.
         """
 
-        string = string.strip()
-        string = string.replace('\n', '\n- ')
-        string = f'- {string}'
+        response = ''
 
-        return string
+        try:
+            string = string.strip()
+            string_list = string.split('-')
+            for string_item in string_list:
+                string_item = string_item.replace('-', '')
+                string_item = string_item.strip()
+                response += f"\n - {string_item}"
+        except Exception as e:
+            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Error converting string to YAML: {e}")
+
+        return response
 
 
     def is_ai_system_prompt(self, prompt:str) -> bool:
@@ -426,7 +434,7 @@ class PromptEngine:
 
         # Combine the list into a string where each item starts with a dash and a space
         for item in old_list:
-            response += f'- {item}\n'
+            response += f' - {item}\n'
 
         return response
     

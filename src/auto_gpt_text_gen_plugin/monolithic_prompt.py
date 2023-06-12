@@ -114,17 +114,18 @@ class MonolithicPrompt(PromptEngine):
         if next_step_num_matches:
             next_step_list = next_step_num_matches.group(2).strip()
             if next_step_list.startswith('1.'):
-                next_steps_bulleted_list = re.sub(r'\d+\.\s', '- ', next_step_list)
+                next_steps_bulleted_list = re.sub(r'\d+\.\s', ' - ', next_step_list)
                 next_steps_bulleted_list = re.sub(r'(?<=\w)(?=-)', '\n', next_steps_bulleted_list)
                 message_str = re.sub(next_steps_num_pattern, f'next_steps:\n{next_steps_bulleted_list}\n', message_str, flags=re.DOTALL)
         
         # If it actually is a YAML list, but it is a stupid list, fix it.
-        next_step_bullet_pattern = r"(next_steps:\n)(-.*?)(?=considerations:)"
+        next_step_bullet_pattern = r"(next_steps:\n)(-.*?)(?=\n|$)"
         next_step_bullet_matches = re.search(next_step_bullet_pattern, message_str, re.DOTALL)
         if next_step_bullet_matches:
             bulleted_list = next_step_bullet_matches.group(2).strip()
             if bulleted_list.startswith('-'):
-                yaml_list = re.sub(r'(?<=\w)-', '\n-', bulleted_list)
+                # Insert newline before every `-` that is preceded by a `.`, except for the first bullet point
+                yaml_list = bulleted_list[0] + re.sub(r'(?<=\.)(?= -)', '\n', bulleted_list[1:])
                 message_str = re.sub(next_step_bullet_pattern, f'next_steps:\n{yaml_list}\n', message_str, flags=re.DOTALL)
 
 
