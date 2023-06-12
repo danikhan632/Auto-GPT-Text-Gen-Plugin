@@ -95,6 +95,13 @@ class MonolithicPrompt(PromptEngine):
         if '\\n' in message_str:
             message_str = message_str.replace('\\n', '\n')
 
+        # Look for plain language strings and convert to YAML tokens
+        normal_words = ["Plan Summary:", "Next Steps:", "TTS Msg:", "TTS Message:", "Command Name:"]
+        replacement_tokens = ["plan_summary:", "next_steps:", "tts_msg:", "tts_msg:", "command_name:"]
+        for normal_word, replacement_token in zip(normal_words, replacement_tokens):
+            pattern = re.compile(re.escape(normal_word), re.IGNORECASE)
+            message_str = re.sub(pattern, replacement_token, message_str)
+
         # If a reserved YAML keyword is in the string without a new line before it, add one
         template_keywords = ['reasoning:', 'next_steps:', 'considerations:', 'tts_msg:', 'command_name:', 'args:']
         for keyword in template_keywords:
