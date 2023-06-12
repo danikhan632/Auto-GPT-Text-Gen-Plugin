@@ -1,4 +1,5 @@
 import json
+import re
 import yaml
 from autogpt.logs import logger
 from colorama import Fore, Style
@@ -99,6 +100,19 @@ class MonolithicPrompt(PromptEngine):
         for keyword in template_keywords:
             if '\n' + keyword not in message_str:
                 message_str = message_str.replace(keyword, '\n' + keyword)
+
+        ## Spacing fixing...
+        # Remove space before the newline 
+        message_str = re.sub(r'\s*\n', '\n', message_str)
+        # Look for "plan_summary:" at the start of the message_str
+        if not message_str.startswith('plan_summary:'):
+            # Does it exist anywhere?
+            if 'plan_summary:' in message_str:
+                # Removee everything before it.
+                message_str = message_str[message_str.find('plan_summary:'):]
+            else:
+                # Add it to the start of the message
+                message_str = 'plan_summary:\n' + message_str
 
         try:
             logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Attempting to convert the response to a dictionary: {message_str}\n\n")

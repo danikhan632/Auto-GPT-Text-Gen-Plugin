@@ -59,7 +59,7 @@ class TextGenPluginController():
         """
         parameters = {
             'seed': -1,
-            'top_p': 0.1,
+            'top_p': 0.3,
             'top_k': 40,
             'repetition_penalty': 1.18,
             'no_repeat_ngram_size': 0
