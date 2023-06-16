@@ -2,7 +2,9 @@ import json
 import re
 from autogpt.config import Config
 from autogpt.config.ai_config import AIConfig
+from autogpt.logs import logger
 from autogpt.prompts.generator import PromptGenerator
+from colorama import Fore, Style
 
 class PromptEngine:
 
@@ -25,6 +27,16 @@ class PromptEngine:
             }
         }
 
+        self.SIMPLE_RESPONSE_FORMAT = {
+            "plan_summary": "",
+            "reasoning": "",
+            "next_steps": '',
+            "considerations": "",
+            "tts_msg": "",
+            "command_name": "",
+            "command_args": []
+        }
+
         # Pull-in from Auto-GPT
         self.prompt_generator = PromptGenerator()
         self.config = Config()
@@ -38,6 +50,101 @@ class PromptEngine:
         self.regex_os = r'The OS you are running on is:(.*?)\n\nGOALS'
         self.regex_commands = r'Commands:(.*?)\n\nResources'
         self.regex_split_commands = r'\d+\.'
+
+
+    def simple_response_to_autogpt_response(self, simple_response:dict) -> str:
+        """
+        Convert a simple response to an Auto-GPT response
+        
+        Args:
+            simple_response (dict): The simple response to convert.
+            
+        Returns:
+            dict: The converted response.
+        """
+
+        response = self.RESPONSE_OBJECT.copy()
+
+        try:
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converting from simple format: {json.dumps(simple_response, indent=4)}\n\n")
+
+            if 'plan_summary' in simple_response:
+                response['thoughts']['text'] = simple_response['plan_summary']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: plan_summary -> {json.dumps(response['thoughts']['text'], indent=4)}\n\n")
+
+            if 'reasoning' in simple_response:
+                response['thoughts']['reasoning'] = simple_response['reasoning']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: reasoning -> {json.dumps(response['thoughts']['reasoning'], indent=4)}\n\n")
+
+            if 'next_steps' in simple_response:
+                actions = simple_response['next_steps']
+                if isinstance(actions, str):
+                    actions = self.string_to_yaml(actions)
+                elif isinstance(actions, list):
+                    actions = self.list_to_yaml_string(actions)
+                elif isinstance(actions, dict):
+                    actions = self.dict_to_yaml_string(actions)
+                response['thoughts']['plan'] = actions
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: next_steps -> {response['thoughts']['plan']}\n\n")
+
+            if 'considerations' in simple_response:
+                considerations = simple_response['considerations']
+                if isinstance(considerations, str):
+                    considerations = self.string_to_yaml(considerations)
+                elif isinstance(considerations, list):
+                    considerations = self.list_to_yaml_string(considerations)
+                elif isinstance(considerations, dict):
+                    considerations = self.dict_to_yaml_string(considerations)
+                response['thoughts']['criticism'] = considerations
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: considerations -> {response['thoughts']['criticism']}\n\n")
+
+            if 'tts_msg' in simple_response:
+                response['thoughts']['speak'] = simple_response['tts_msg']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: tts_msg -> {json.dumps(response['thoughts']['speak'], indent=4)}\n\n")
+
+            if 'command_name' in simple_response:
+                response['command']['name'] = simple_response['command_name']
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: command_name -> {response['command']['name']}\n\n")
+
+            # args are objects of name: value pairs
+            if 'args' in simple_response:
+                for arg in simple_response['args']:
+                    arg_name = arg['name']
+                    arg_value = arg['value']
+                    response['command']['args'][arg_name] = arg_value
+                logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted to Auto-GPT format: args -> {json.dumps(response['command']['args'], indent=4)}\n\n")
+
+        except Exception as e:
+            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Error converting simple response to Auto-GPT response: {e}")
+            response['thoughts']['text'] = json.dumps(simple_response, indent=4)
+
+        return json.dumps(response)
+    
+
+    def string_to_yaml(self, string:str) -> str:
+        """
+        Convert a string to a YAML list with leading dashes.
+        
+        Args:
+            string (str): The string to convert.
+            
+        Returns:
+            str: The converted string.
+        """
+
+        response = ''
+
+        try:
+            string = string.strip()
+            string_list = string.split('-')
+            for string_item in string_list:
+                string_item = string_item.replace('-', '')
+                string_item = string_item.strip()
+                response += f"\n - {string_item}"
+        except Exception as e:
+            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Error converting string to YAML: {e}")
+
+        return response
 
 
     def is_ai_system_prompt(self, prompt:str) -> bool:
@@ -151,6 +258,27 @@ class PromptEngine:
             response = self.prompt_profile[container][attribute]
 
         return str(response).replace('\\n', '\n')
+    
+
+    def get_profile_attribute_as_raw(self, attribute:str, container:str = '') -> str:
+        """
+        Get an attribute from the AI config.
+
+        Args:
+            attribute (str): The attribute to get.
+
+        Returns:
+            str: The attribute's value.
+        """
+
+        response = ''
+
+        if container == '' and attribute in self.prompt_profile:
+            response = self.prompt_profile[attribute]
+        elif container in self.prompt_profile and attribute in self.prompt_profile[container]:
+            response = self.prompt_profile[container][attribute]
+
+        return str(response)
 
     
     def get_agent_name(self) -> str:
@@ -306,9 +434,29 @@ class PromptEngine:
 
         # Combine the list into a string where each item starts with a dash and a space
         for item in old_list:
-            clean_item = self.remove_whitespace(item)
-            if clean_item != '':
-                response += f'- {item}\n'
+            response += f' - {item}\n'
+
+        return response
+    
+
+    def dict_to_yaml_string(self, old_dict:dict) -> str:
+        """
+        Convert a dictionary to a YAML list string where the key and value
+        are concatinated , seperated by a colon.
+        
+        Args:
+            old_dict (dict): The dictionary to convert.
+            
+        Returns:
+            str: The YAML list string.
+        """
+
+        response = ''
+
+        # Combine the dictionary into a string where each item starts with a dash and a space
+        # Each item is the key and value concatinated with a colon
+        for key, value in old_dict.items():
+            response += f' - {key}: {value}\n'
 
         return response
     
@@ -484,7 +632,7 @@ class PromptEngine:
 
         response += self.get_profile_attribute('response_format_label', 'strings')
         response += self.get_profile_attribute('response_format_pre_prompt', 'strings')
-        response += self.get_as_json('response_format')
+        response += self.get_profile_attribute_as_raw('response_format')
         response += self.get_profile_attribute('response_format_post_prompt', 'strings')
 
         return str(response)

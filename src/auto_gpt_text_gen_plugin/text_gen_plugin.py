@@ -1,3 +1,4 @@
+import os
 import yaml
 from autogpt.logs import logger
 from colorama import Fore, Style
@@ -10,7 +11,7 @@ class TextGenPluginController():
     multiple APIs
     """
 
-    def __init__(self, plugin, base_url, prompt_profile_path):
+    def __init__(self, plugin, base_url, prompt_profile_path, model):
         """
         Args:
             plugin (AutoGPTPluginTemplate): The plugin that is using this controller.
@@ -20,7 +21,7 @@ class TextGenPluginController():
 
         # Load the profile
         prompt_config = self.load_prompt_config(prompt_profile_path)
-        self.api = Client(base_url, prompt_config)
+        self.api = Client(base_url, prompt_config, model)
 
 
     def load_prompt_config(self, path) -> dict|list|str|None:
@@ -57,8 +58,16 @@ class TextGenPluginController():
         Returns:
             str: The resulting response.
         """
+
+        parameters = {
+            'seed': int(os.environ.get('MY_ENV_VAR', '-1')),
+            'top_p': float(os.environ.get('LOCAL_LLM_TOP_P', '0.4')),
+            'top_k': int(os.environ.get('LOCAL_LLM_TOP_K', '50')),
+            'repetition_penalty': float(os.environ.get('LOCAL_LLM_REPETITION_PENALTY', '1.19')),
+            'no_repeat_ngram_size': int(os.environ.get('LOCAL_LLM_NO_REPEAT_NGRAM_SIZE', '0'))
+        }
         
-        return self.api.create_chat_completion(messages, temperature, max_tokens)
+        return self.api.create_chat_completion(messages, temperature, max_tokens, parameters)
     
     
     def handle_get_embedding(self, text) -> list:

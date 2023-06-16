@@ -28,8 +28,9 @@ class AutoGPTTextGenPlugin(AutoGPTPluginTemplate):
         # Initialize the controller
         base_url = os.environ.get('LOCAL_LLM_BASE_URL', "http://127.0.0.1:5000/")
         prompt_profile_path = os.environ.get('LOCAL_LLM_PROMPT_PROFILE', None)
+        model = os.environ.get('LOCAL_LLM_MODEL', None)
         print(f">>>>> Auto-GPT-Text-Gen-Plugin: Using profile at path: {prompt_profile_path}")
-        self.controller=TextGenPluginController(self, base_url, prompt_profile_path)
+        self.controller=TextGenPluginController(self, base_url, prompt_profile_path, model)
         
     
     def can_handle_on_response(self) -> bool:

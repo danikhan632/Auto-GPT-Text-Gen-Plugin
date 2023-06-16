@@ -1,4 +1,6 @@
 import json
+import re
+import yaml
 from autogpt.logs import logger
 from colorama import Fore, Style
 from .prompt_engine import PromptEngine
@@ -28,27 +30,20 @@ class MonolithicPrompt(PromptEngine):
         # Prime the variables
         message_string = ''
 
-        user_name = self.get_user_name()
-        if user_name not in ['', None, 'None'] and len(user_name) > 0:
-            user_name += ': '
-        elif user_name == None:
-            user_name = ''
-        
-        chat_name = self.get_ai_chat_name()
-        # If chat_name isn't empty, add a colon and space
-        if chat_name not in ['', None, 'None'] and len(chat_name) > 0:
-            chat_name += ': '
-        elif chat_name == None:
-            chat_name = ''
+        send_as_name = self.get_user_name()
+        if send_as_name not in ['', None, 'None'] and len(send_as_name) > 0:
+            send_as_name += ': '
+        elif send_as_name == None:
+            send_as_name = ''
         
         if not self.is_ai_system_prompt(self.original_system_msg):
             logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} The system message is not an agent prompt, returning original message\n\n")
-            return self.messages_to_conversation(messages, user_name)
+            return self.messages_to_conversation(messages, send_as_name)
         else:
             logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} The system message is an agent prompt, continuing\n\n")
 
         # Rebuild prompt
-        message_string += user_name
+        message_string += send_as_name
         message_string += self.get_ai_profile()
         message_string += self.get_ai_constraints()
         message_string += self.get_commands()
@@ -57,19 +52,24 @@ class MonolithicPrompt(PromptEngine):
         message_string += self.get_response_format()
         message_string = self.get_profile_attribute('prescript') + message_string
 
-        message_string += '[Begin History]\n\n'
-        # Add all the other messages
         end_strip = self.get_end_strip()
-        message_string += self.messages_to_conversation(messages[1:-end_strip], user_name)
-        message_string += '[End History]\n\n'
-        message_string += chat_name
+        history = self.messages_to_conversation(messages[1:-end_strip], send_as_name)
+        if history not in ['', None, 'None'] and len(history) > 0:
+            message_string += self.get_profile_attribute('history_start') + '\n\n'
+            message_string += history
+            message_string += self.get_profile_attribute('history_end') + '\n\n'
+        else:
+            message_string += self.get_profile_attribute('history_none') + '\n\n'
 
-        message_string += self.get_profile_attribute('postscript')
+        postscript = self.get_profile_attribute('postscript')
+        if postscript not in ['', None, 'None'] and len(postscript) > 0:
+            message_string += send_as_name
+            message_string += postscript
 
         return message_string
     
 
-    def reshape_response(self, message:str) -> dict:
+    def reshape_response(self, message:str) -> str:
         """
         Convert the API response to a dictionary, then convert thoughts->plan to a YAML list
         then return a JSON string of the object
@@ -81,14 +81,74 @@ class MonolithicPrompt(PromptEngine):
             str: The response as a dictionary, or the original message if it cannot be converted.
         """
 
-        message_str = json.dumps(message)
-        message_str = message_str.strip()
-        try:
-            message_dict = json.loads(message_str)
-        except json.decoder.JSONDecodeError as e:
-            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not convert message to JSON: ({e})\n")
-            message_dict = self.recover_json_response(message)
-            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Attempted to recover JSON response.\n\n")
-            return message_dict
+        message_str = message.strip()
 
-        return message_dict
+        # If the message has a start template tag, remove it and everything before it
+        if '--START TEMPLATE--' in message:
+            message_str = message[message.find('--START TEMPLATE--')+len('--START TEMPLATE--'):]
+
+        # If the message has an end template tag, remove it and everything after it
+        if '--END TEMPLATE--' in message:
+            message_str = message_str[:message.find('--END TEMPLATE--')]
+
+        # If \n is double-escaped, fix it.
+        if '\\n' in message_str:
+            message_str = message_str.replace('\\n', '\n')
+
+        # Look for plain language strings and convert to YAML tokens
+        normal_words = ["Plan Summary:", "Next Steps:", "TTS Msg:", "TTS Message:", "Command Name:"]
+        replacement_tokens = ["plan_summary:", "next_steps:", "tts_msg:", "tts_msg:", "command_name:"]
+        for normal_word, replacement_token in zip(normal_words, replacement_tokens):
+            pattern = re.compile(re.escape(normal_word), re.IGNORECASE)
+            message_str = re.sub(pattern, replacement_token, message_str)
+
+        # If a reserved YAML keyword is in the string without a new line before it, add one
+        template_keywords = ['reasoning:', 'next_steps:', 'considerations:', 'tts_msg:', 'command_name:', 'args:']
+        for keyword in template_keywords:
+            if '\n' + keyword not in message_str:
+                message_str = message_str.replace(keyword, '\n' + keyword)
+
+        # If the list between next_steps: and considerations: is a numbered list, change it to a YAML list string
+        next_steps_num_pattern = r"(next_steps:\n)(1\..*?)(?=considerations:)"
+        next_step_num_matches = re.search(next_steps_num_pattern, message_str, re.DOTALL)
+        if next_step_num_matches:
+            next_step_list = next_step_num_matches.group(2).strip()
+            if next_step_list.startswith('1.'):
+                next_steps_bulleted_list = re.sub(r'\d+\.\s', ' - ', next_step_list)
+                next_steps_bulleted_list = re.sub(r'(?<=\w)(?=-)', '\n', next_steps_bulleted_list)
+                message_str = re.sub(next_steps_num_pattern, f'next_steps:\n{next_steps_bulleted_list}\n', message_str, flags=re.DOTALL)
+        
+        # If it actually is a YAML list, but it is a stupid list, fix it.
+        next_step_bullet_pattern = r"(next_steps:\n)(-.*?)(?=\n|$)"
+        next_step_bullet_matches = re.search(next_step_bullet_pattern, message_str, re.DOTALL)
+        if next_step_bullet_matches:
+            bulleted_list = next_step_bullet_matches.group(2).strip()
+            if bulleted_list.startswith('-'):
+                # Insert newline before every `-` that is preceded by a `.`, except for the first bullet point
+                yaml_list = bulleted_list[0] + re.sub(r'(?<=\.)(?= -)', '\n', bulleted_list[1:])
+                message_str = re.sub(next_step_bullet_pattern, f'next_steps:\n{yaml_list}\n', message_str, flags=re.DOTALL)
+
+
+        ## Spacing fixing...
+        # Remove space before the newline 
+        message_str = re.sub(r'\s*\n', '\n', message_str)
+        # Look for "plan_summary:" at the start of the message_str
+        if not message_str.startswith('plan_summary:'):
+            # Does it exist anywhere?
+            if 'plan_summary:' in message_str:
+                # Removee everything before it.
+                message_str = message_str[message_str.find('plan_summary:'):]
+            else:
+                # Add it to the start of the message
+                message_str = 'plan_summary:\n' + message_str
+
+        try:
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Attempting to convert the response to a dictionary: {message_str}\n\n")
+            message_data = yaml.safe_load(message_str)
+            logger.debug(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Converted the YAML response to a dictionary\n\n")
+            converted_obj = self.simple_response_to_autogpt_response(message_data)
+        except Exception as e:
+            logger.error(f"{Fore.LIGHTRED_EX}Auto-GPT-Text-Gen-Plugin:{Fore.RESET} Could not reshape the response to the Auto-GPT format, returning original message: {e}\n\n")
+            return message
+
+        return converted_obj
